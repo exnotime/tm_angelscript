@@ -1,0 +1,2 @@
+^W:\THEMACHINERY\PLUGINS\MINIMAL\LIB\ANGELSCRIPT\ANGELSCRIPT\SOURCE\AS_CALLFUNC_X64_MSVC_ASM.ASM
+ml64.exe /c  /nologo /Fo"Debug\as_callfunc_x64_msvc_asm.obj" /W3 /Zi /Ta "W:\TheMachinery\plugins\minimal\lib\Angelscript\angelscript\source\\as_callfunc_x64_msvc_asm.asm"
