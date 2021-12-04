@@ -115,6 +115,7 @@ void MessageCallback(const asSMessageInfo* msg, void* param) {
 
 extern "C" {
 #include <foundation/hash.inl>
+#include <foundation/carray.inl>
 }
 
 struct tm_as_allocator_t {
@@ -183,10 +184,10 @@ extern "C" {
 #define TM_TT_TYPE_HASH__SCRIPT_MODULE_DEFINES TM_STATIC_HASH("defines", 0xe7420a90176aad43ULL)
 
 #define TM_TT_TYPE_SCRIPT_PLUGIN "script_plugin"
-#define TM_TT_TYPE_HASH__SCRIPT_PLUGIN TM_STATIC_HASH("script_plugin", 0x144d369e3a49eba2ULL)
-#define	TM_TT_TYPE_HASH__SCRIPT_PLUGIN_MODULE TM_STATIC_HASH("module", 0x144d369e3a49eba2ULL)
+#define TM_TT_TYPE_HASH__SCRIPT_PLUGIN TM_STATIC_HASH("script_plugin", 0x4d9acaa11e82434bULL)
+#define	TM_TT_TYPE_HASH__SCRIPT_PLUGIN_MODULE TM_STATIC_HASH("module", 0xaf2b5e99b268c9d0ULL)
 
-	enum MODULE_PROPERTIES {
+	enum SCRIPT_MODULE_PROPERTIES {
 		TM_TT_PROP__SCRIPT_MODULE__MAIN,
 		TM_TT_PROP__SCRIPT_MODULE__BYTECODE,
 		TM_TT_PROP__SCRIPT_MODULE__DEFINES,
@@ -225,23 +226,32 @@ extern "C" {
 		script_context->Execute();
 	}
 
-	static void init(struct tm_plugin_o* inst, tm_allocator_i* allocator)
+	enum SCRIPT_PLUGIN_PROPERTIES {
+		TM_TT_PROP__SCRIPT_PLUGIN__MODULE,
+		TM_TT_PROP__SCRIPT_PLUGIN__COUNT
+	};
+
+	struct tm_angelscript_script_plugin_t {
+		tm_tt_id_t module_id;
+		bool has_init;
+		bool has_update;
+		bool has_shutdown;
+	};
+
+	static void script_init(struct tm_plugin_o* inst, tm_allocator_i* allocator)
 	{
 		
 	}
 
-	static void shutdown(struct tm_plugin_o* inst)
+	static void script_shutdown(struct tm_plugin_o* inst)
 	{
 
 	}
 
-	static void tick(struct tm_plugin_o* inst, float dt)
+	static void script_tick(struct tm_plugin_o* inst, float dt)
 	{
 
 	}
-
-	static struct tm_plugin_init_i init_i;
-	static struct tm_plugin_tick_i tick_i;
 
 	static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object, uint32_t indent){
 		TM_INIT_TEMP_ALLOCATOR(ta);
@@ -267,7 +277,7 @@ extern "C" {
 		if (tm_ui_api->button(args->ui, args->uistyle, &compile_button)) {
 			compile_module_object(args->tt, object, ta);
 		}
-		item_rect.y += compile_button.rect.h + 5; //Add a bit of margin
+		item_rect.y += compile_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
 
 		tm_ui_button_t run_button = {};
 		run_button.text = "Run";
@@ -276,22 +286,56 @@ extern "C" {
 		if (tm_ui_api->button(args->ui, args->uistyle, &run_button)) {
 			test_run(args->tt, object);
 		}
-		item_rect.y += compile_button.rect.h + 5; //Add a bit of margin
+		item_rect.y += compile_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
 
 		TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
 		return item_rect.y;
 	}
 
+	static float plugin_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object, uint32_t indent) {
+		TM_INIT_TEMP_ALLOCATOR(ta);
+		tm_tt_type_t module_type = tm_the_truth_api->object_type_from_name_hash(args->tt, TM_TT_TYPE_HASH__SCRIPT_MODULE);
+		
+		tm_tt_id_t* modules = tm_the_truth_api->all_objects_of_type(args->tt, module_type, ta);
+		uint32_t module_count = (uint32_t)tm_carray_size(modules);
+		const char** module_names = (const char**)tm_temp_alloc(ta, sizeof(char*) * module_count + 1);
+		tm_tt_id_t* module_list = (tm_tt_id_t*)tm_temp_alloc(ta, sizeof(tm_tt_id_t) * module_count + 1);
+
+		module_names[0] = "None";
+		module_list[0] = { 0 };
+
+		for (uint32_t i = 1; i < module_count + 1; ++i) {
+			module_names[i] = tm_the_truth_assets_api->object_asset_name(args->tt, modules[i - 1]);
+			module_list[i] = modules[i - 1];
+		}
+		item_rect.y = tm_properties_view_api->ui_reference_popup_picker(args, item_rect, "Module", "Selects the module", object, TM_TT_PROP__SCRIPT_PLUGIN__MODULE, module_names, module_list, module_count + 1);
+		TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
+		return item_rect.y;
+	}
+
 	static void create_asset_type(tm_the_truth_o* tt) {
+		//Module type
 		static tm_the_truth_property_definition_t module_properties[] = {
 			{ "main", TM_THE_TRUTH_PROPERTY_TYPE_STRING },
 			{ "bytecode", TM_THE_TRUTH_PROPERTY_TYPE_BUFFER }
 		};
-		const tm_tt_type_t type = tm_the_truth_api->create_object_type(tt, TM_TT_TYPE__SCRIPT_MODULE, module_properties, TM_ARRAY_COUNT(module_properties));
-		tm_the_truth_api->set_aspect(tt, type, TM_TT_ASPECT__FILE_EXTENSION, TM_TT_TYPE__SCRIPT_MODULE);
+		const tm_tt_type_t module_type = tm_the_truth_api->create_object_type(tt, TM_TT_TYPE__SCRIPT_MODULE, module_properties, TM_ARRAY_COUNT(module_properties));
+		tm_the_truth_api->set_aspect(tt, module_type, TM_TT_ASPECT__FILE_EXTENSION, TM_TT_TYPE__SCRIPT_MODULE);
 		static tm_properties_aspect_i properties_aspect;
 		properties_aspect.custom_ui = module_properties__custom_ui;
-		tm_the_truth_api->set_aspect(tt, type, TM_TT_ASPECT__PROPERTIES, &properties_aspect);
+		tm_the_truth_api->set_aspect(tt, module_type, TM_TT_ASPECT__PROPERTIES, &properties_aspect);
+
+		//Plugin type
+		static tm_the_truth_property_definition_t plugin_properties[TM_TT_PROP__SCRIPT_PLUGIN__COUNT];
+		plugin_properties[TM_TT_PROP__SCRIPT_PLUGIN__MODULE].name = "Module"; 
+		plugin_properties[TM_TT_PROP__SCRIPT_PLUGIN__MODULE].type = TM_THE_TRUTH_PROPERTY_TYPE_REFERENCE;
+		plugin_properties[TM_TT_PROP__SCRIPT_PLUGIN__MODULE].type_hash = TM_TT_TYPE_HASH__ANYTHING;
+
+		const tm_tt_type_t plugin_type = tm_the_truth_api->create_object_type(tt, TM_TT_TYPE_SCRIPT_PLUGIN, plugin_properties, TM_ARRAY_COUNT(plugin_properties));
+		tm_the_truth_api->set_aspect(tt, plugin_type, TM_TT_ASPECT__FILE_EXTENSION, TM_TT_TYPE_SCRIPT_PLUGIN);
+		static tm_properties_aspect_i plugin_properties_aspect;
+		plugin_properties_aspect.custom_ui = plugin_properties__custom_ui;
+		tm_the_truth_api->set_aspect(tt, plugin_type, TM_TT_ASPECT__PROPERTIES, &plugin_properties_aspect);
 	}
 
 	// -- asset browser register interface
@@ -303,6 +347,17 @@ extern "C" {
 
 	static tm_asset_browser_create_asset_i asset_browser_create_script_module_inst;
 
+	static tm_tt_id_t asset_browser_create_script_plugin(struct tm_asset_browser_create_asset_o* inst, tm_the_truth_o* tt, tm_tt_undo_scope_t undo_scope)
+	{
+		const tm_tt_type_t type = tm_the_truth_api->object_type_from_name_hash(tt, TM_TT_TYPE_HASH__SCRIPT_PLUGIN);
+		return tm_the_truth_api->create_object_of_type(tt, type, undo_scope);
+	}
+
+	static tm_asset_browser_create_asset_i asset_browser_create_script_plugin_inst;
+
+	static struct tm_plugin_init_i script_init_i;
+	static struct tm_plugin_tick_i script_tick_i;
+	static struct tm_plugin_shutdown_i script_shutdown_i;
 
 	TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 	{
@@ -348,11 +403,19 @@ extern "C" {
 			asset_browser_create_script_module_inst.create = asset_browser_create_script_module;
 			tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_module_inst);
 
+			asset_browser_create_script_plugin_inst.asset_name = TM_LOCALIZE_LATER("New Angelscript Plugin");
+			asset_browser_create_script_plugin_inst.menu_name = TM_LOCALIZE_LATER("New Angelscript Plugin");
+			asset_browser_create_script_plugin_inst.create = asset_browser_create_script_plugin;
+			tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_plugin_inst);
+
 			//Add plugin callbacks
-			init_i.init = &init;
-			tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &init_i);
-			tick_i.tick = tick;
-			tm_add_or_remove_implementation(reg, load, tm_plugin_tick_i, &tick_i);
+			script_init_i.init = script_init;
+			tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &script_init_i);
+			script_tick_i.tick = script_tick;
+			tm_add_or_remove_implementation(reg, load, tm_plugin_tick_i, &script_tick_i);
+			script_shutdown_i.shutdown = script_shutdown;
+			tm_add_or_remove_implementation(reg, load, tm_plugin_shutdown_i, &script_shutdown_i);
+
 		} else {
 			shutdown_angelscript();
 		}
