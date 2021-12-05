@@ -168,6 +168,30 @@ void setup_angelscript() {
 	tm_entity::register_tm_entity_interface(script_engine);
 }
 
+void prepare_angelscript_function(asIScriptFunction* func) {
+	if (script_context->Prepare(func) < 0) {
+		tm_logger_api->printf(TM_LOG_TYPE_ERROR, "Failed to prepare script function");
+	}
+}
+
+asIScriptContext* get_script_context() {
+	return script_context;
+}
+
+void run_angelscript_function(asIScriptFunction* func) {
+	
+	int ret = script_context->Execute();
+	if (ret == asEXECUTION_SUSPENDED) {
+		script_context->Execute();
+	}
+	if (ret == asEXECUTION_EXCEPTION) {
+		int column;
+		const char* filename;
+		int line = script_context->GetExceptionLineNumber(&column, &filename);
+		tm_logger_api->printf(TM_LOG_TYPE_ERROR, "Angelscript exception: %s : File %s:%d,%d", script_context->GetExceptionString(), filename, line, column);
+	}
+}
+
 void shutdown_angelscript() {
 	script_context->Release();
 	//TODO:Unload all script modules the truth? 
@@ -230,26 +254,81 @@ extern "C" {
 		TM_TT_PROP__SCRIPT_PLUGIN__COUNT
 	};
 
-	struct tm_angelscript_script_plugin_t {
-		tm_tt_id_t module_id;
-		bool has_init;
-		bool has_update;
-		bool has_shutdown;
+	struct tm_script_plugin_t {
+		asIScriptModule* as_module;
+		asIScriptFunction* init_func;
+		asIScriptFunction* tick_func;
+		asIScriptFunction* shutdown_func;
 	};
 
-	static void script_init(struct tm_plugin_o* inst, tm_allocator_i* allocator)
+	//Array of plugins
+	static tm_script_plugin_t* _plugins = nullptr;
+	
+	static void script_init()
 	{
+		//TODO: Push some plugin info to the init function to separate plugins that share the same module
+		uint32_t plugin_count = (uint32_t)tm_carray_size(_plugins);
+		for (uint32_t i = 0; i < plugin_count; ++i) {
+			if (_plugins->init_func) {
+				prepare_angelscript_function(_plugins->init_func);
+				run_angelscript_function(_plugins->init_func);
+			}
+		}
 		
+	}
+	//Will go through each plugin and get the module for each of them. Then it will call the init function of each
+	static void script_set_the_the_truth(struct tm_plugin_o* inst, struct tm_the_truth_o* tt) {
+		TM_INIT_TEMP_ALLOCATOR(ta);
+		if (_plugins) {
+			//TODO: Unload all plugins
+		}
+		tm_tt_type_t plugin_type = tm_the_truth_api->object_type_from_name_hash(tt, TM_TT_TYPE_HASH__SCRIPT_PLUGIN);
+		tm_tt_id_t* script_plugins = tm_the_truth_api->all_objects_of_type(tt, plugin_type, ta);
+		uint32_t plugin_count = (uint32_t)tm_carray_size(script_plugins);
+		if (plugin_count > 0) {
+			_plugins = tm_carray_create(tm_script_plugin_t, plugin_count, &_tm_as_allocator.allocator);
+
+			for (uint32_t i = 0; i < plugin_count; ++i) {
+				const tm_the_truth_object_o* plugin_obj = tm_the_truth_api->read(tt, script_plugins[i]);
+				tm_tt_id_t module_id = tm_the_truth_api->get_reference(tt, plugin_obj, TM_TT_PROP__SCRIPT_PLUGIN__MODULE);
+				const tm_the_truth_object_o* module_obj = tm_the_truth_api->read(tt, module_id);
+				tm_tt_buffer_t bytecode_buffer = tm_the_truth_api->get_buffer(tt, module_obj, TM_TT_PROP__SCRIPT_MODULE__BYTECODE);
+				const char* module_name = tm_the_truth_assets_api->object_asset_name(tt, module_id);
+				_plugins[i].as_module = as_compiler::get_module_from_bytecode(module_name, bytecode_buffer.size, bytecode_buffer.data);
+				//Reflect entry points
+				_plugins[i].init_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_init()");
+				_plugins[i].tick_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_tick(float)");
+				_plugins[i].shutdown_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_shutdown()");
+			}
+		}
+		TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
+
+		script_init();
 	}
 
 	static void script_shutdown(struct tm_plugin_o* inst)
 	{
+		uint32_t plugin_count = (uint32_t)tm_carray_size(_plugins);
+		for (uint32_t i = 0; i < plugin_count; ++i) {
+			if (_plugins->shutdown_func) {
+				prepare_angelscript_function(_plugins->shutdown_func);
+				run_angelscript_function(_plugins->shutdown_func);
+			}
+		}
 
+		tm_carray_free(_plugins, &_tm_as_allocator.allocator);
 	}
 
 	static void script_tick(struct tm_plugin_o* inst, float dt)
 	{
-
+		uint32_t plugin_count = (uint32_t)tm_carray_size(_plugins);
+		for (uint32_t i = 0; i < plugin_count; ++i) {
+			if (_plugins->tick_func) {
+				prepare_angelscript_function(_plugins->tick_func);
+				get_script_context()->SetArgFloat(0, dt);
+				run_angelscript_function(_plugins->tick_func);
+			}
+		}
 	}
 
 	static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object){
@@ -290,6 +369,7 @@ extern "C" {
 		TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
 		return item_rect.y;
 	}
+
 
 	static float plugin_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object) {
 		TM_INIT_TEMP_ALLOCATOR(ta);
@@ -357,7 +437,7 @@ extern "C" {
 	static struct tm_plugin_init_i script_init_i;
 	static struct tm_plugin_tick_i script_tick_i;
 	static struct tm_plugin_shutdown_i script_shutdown_i;
-
+	static struct tm_plugin_set_the_truth_i set_the_truth_i;
 
 	TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 	{
@@ -391,8 +471,8 @@ extern "C" {
 			tm_ui_api = tm_get_api(reg, tm_ui_api);
 			tm_allocator_api = tm_get_api(reg, tm_allocator_api);
 
-			/*while (!::IsDebuggerPresent())
-				::Sleep(100);*/
+			//while (!::IsDebuggerPresent())
+			//	::Sleep(100);
 
 			setup_angelscript();
 
@@ -409,13 +489,15 @@ extern "C" {
 			tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_plugin_inst);
 
 			//Add plugin callbacks
-			script_init_i.init = script_init;
-			tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &script_init_i);
+			//Init will happen before any the truth has been loaded so it is pointless to call it since we will have no modules loaded
+			//script_init_i.init = script_init;
+			//tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &script_init_i);
 			script_tick_i.tick = script_tick;
 			tm_add_or_remove_implementation(reg, load, tm_plugin_tick_i, &script_tick_i);
 			script_shutdown_i.shutdown = script_shutdown;
 			tm_add_or_remove_implementation(reg, load, tm_plugin_shutdown_i, &script_shutdown_i);
-
+			set_the_truth_i.set_the_truth = script_set_the_the_truth;
+			tm_add_or_remove_implementation(reg, load, tm_plugin_set_the_truth_i, &set_the_truth_i);
 		} else {
 			shutdown_angelscript();
 		}
