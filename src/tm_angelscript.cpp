@@ -36,7 +36,6 @@ extern "C" {
 #include <plugins/editor_views/asset_browser.h>
 #include <plugins/editor_views/properties.h>
 #include <the_machinery/the_machinery.h>
-
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -253,7 +252,7 @@ extern "C" {
 
 	}
 
-	static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object, uint32_t indent){
+	static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object){
 		TM_INIT_TEMP_ALLOCATOR(ta);
 		bool picked = false;
 		item_rect.y = tm_properties_view_api->ui_open_path(args, item_rect, TM_LOCALIZE_LATER("Main file"), TM_LOCALIZE_LATER("Path to main file"), object, TM_TT_PROP__SCRIPT_MODULE__MAIN, "as, *", "as", &picked);
@@ -292,7 +291,7 @@ extern "C" {
 		return item_rect.y;
 	}
 
-	static float plugin_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object, uint32_t indent) {
+	static float plugin_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object) {
 		TM_INIT_TEMP_ALLOCATOR(ta);
 		tm_tt_type_t module_type = tm_the_truth_api->object_type_from_name_hash(args->tt, TM_TT_TYPE_HASH__SCRIPT_MODULE);
 		
@@ -358,6 +357,7 @@ extern "C" {
 	static struct tm_plugin_init_i script_init_i;
 	static struct tm_plugin_tick_i script_tick_i;
 	static struct tm_plugin_shutdown_i script_shutdown_i;
+
 
 	TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 	{
