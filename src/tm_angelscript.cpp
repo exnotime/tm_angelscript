@@ -91,6 +91,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_angelscript.h"
 #include "tm_angelscript_entity_interface.h"
 #include "tm_angelscript_string.h"
+#include "tm_angelscript_array.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -164,7 +165,8 @@ void setup_angelscript() {
 	script_context = script_engine->CreateContext();
 	//Register engine interfaces
 	register_tm_types(script_engine);
-	tm_string::register_tm_string_interface(script_engine, tm_allocator_api->system);
+	tm_string::register_tm_string_interface(script_engine, &_tm_as_allocator.allocator);
+	tm_array::register_tm_array(script_engine, &_tm_as_allocator.allocator);
 	tm_entity::register_tm_entity_interface(script_engine);
 }
 
@@ -239,16 +241,6 @@ extern "C" {
 		}
 	}
 
-	void test_run(tm_the_truth_o* tt, tm_tt_id_t object) {
-		const tm_the_truth_object_o* module_read_obj = tm_the_truth_api->read(tt, object);
-		tm_tt_buffer_t bytecode_buffer = tm_the_truth_api->get_buffer(tt, module_read_obj, TM_TT_PROP__SCRIPT_MODULE__BYTECODE);
-		asIScriptModule* script_module = as_compiler::get_module_from_bytecode("name", bytecode_buffer.size, bytecode_buffer.data);
-
-		asIScriptFunction* func = script_module->GetFunctionByDecl("void plugin_init()");
-		script_context->Prepare(func);
-		script_context->Execute();
-	}
-
 	enum SCRIPT_PLUGIN_PROPERTIES {
 		TM_TT_PROP__SCRIPT_PLUGIN__MODULE,
 		TM_TT_PROP__SCRIPT_PLUGIN__COUNT
@@ -278,6 +270,7 @@ extern "C" {
 	}
 	//Will go through each plugin and get the module for each of them. Then it will call the init function of each
 	static void script_set_the_the_truth(struct tm_plugin_o* inst, struct tm_the_truth_o* tt) {
+		
 		TM_INIT_TEMP_ALLOCATOR(ta);
 		if (_plugins) {
 			//TODO: Unload all plugins
@@ -296,9 +289,11 @@ extern "C" {
 				const char* module_name = tm_the_truth_assets_api->object_asset_name(tt, module_id);
 				_plugins[i].as_module = as_compiler::get_module_from_bytecode(module_name, bytecode_buffer.size, bytecode_buffer.data);
 				//Reflect entry points
-				_plugins[i].init_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_init()");
-				_plugins[i].tick_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_tick(float)");
-				_plugins[i].shutdown_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_shutdown()");
+				if (_plugins[i].as_module) {
+					_plugins[i].init_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_init()");
+					_plugins[i].tick_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_tick(float)");
+					_plugins[i].shutdown_func = _plugins[i].as_module->GetFunctionByDecl("void plugin_shutdown()");
+				}
 			}
 		}
 		TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
@@ -362,7 +357,6 @@ extern "C" {
 		run_button.tooltip = "Runs the script";
 		run_button.rect = item_rect;
 		if (tm_ui_api->button(args->ui, args->uistyle, &run_button)) {
-			test_run(args->tt, object);
 		}
 		item_rect.y += compile_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
 

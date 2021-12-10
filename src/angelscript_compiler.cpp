@@ -133,6 +133,9 @@ namespace as_compiler {
 	}
 
 	asIScriptModule* get_module_from_bytecode(const char* name, uint64_t size, const void* bc) {
+		if (bc == nullptr || size == 0) {
+			return nullptr;
+		}
 		ByteStream bs(bc, size);
 		asIScriptModule* mod = _engine->GetModule(name, asEGMFlags::asGM_CREATE_IF_NOT_EXISTS);
 		bool debug;
