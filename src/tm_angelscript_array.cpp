@@ -15,6 +15,10 @@ extern "C" {
 namespace tm_array {
 #define tm_carray_create_with_size(p, s, n, allocator) (tm_carray_create_internal(p, n, s, allocator, __FILE__, __LINE__))
 #define tm_carray_free_with_size(a, s, allocator)((*(void **)&(a)) = tm_carray_set_capacity_internal((void *)a, 0, s, allocator, __FILE__, __LINE__))
+#define tm_carray_grow_with_size(a, n, s, allocator) ((*(void **)&(a)) = tm_carray_grow_internal((void *)a, n, s, allocator, __FILE__, __LINE__))
+
+#define tm_carray_set_capacity_with_size(a, n, s, allocator, file, line) ((*(void **)&(a)) = tm_carray_set_capacity_internal((void *)a, n, s, allocator, file, line))
+#define tm_carray_resize_with_size(a, n, s, allocator) ((tm_carray_needs_to_grow(a, n) ? tm_carray_set_capacity_with_size(a, n, s, allocator, __FILE__, __LINE__) : 0), (a) ? tm_carray_header(a)->size = n : 0)
 
 	static tm_allocator_i* _allocator = nullptr;
 	
@@ -71,7 +75,14 @@ namespace tm_array {
 
 		asUINT length = *(asUINT*)buf;
 
-		sa->array = (char*)tm_carray_create_with_size(sa->array, sa->element_size, length, _allocator);
+		if (length == 0) {
+			//tm_carray_create crashes with an empty array as input
+			//Create it with 1 element instead and set the header to say 0
+			sa->array = (char*)tm_carray_create_with_size(sa->array, sa->element_size, 1, _allocator);
+			tm_carray_header(sa->array)->size = 0;
+		} else {
+			sa->array = (char*)tm_carray_create_with_size(sa->array, sa->element_size, length, _allocator);
+		}
 		sa->sub_type_id = ot->GetSubTypeId();
 		sa->type = ot;
 		ot->AddRef();
@@ -283,15 +294,113 @@ namespace tm_array {
 		}
 	}
 
+	void construct(tm_script_array_t* sa, asUINT start, asUINT end) {
+		if ((sa->sub_type_id & asTYPEID_MASK_OBJECT) && !(sa->sub_type_id & asTYPEID_OBJHANDLE))
+		{
+			// Create an object using the default constructor/factory for each element
+			void** max = (void**)(sa->array + end * sizeof(void*));
+			void** d = (void**)(sa->array + start * sizeof(void*));
+
+			asIScriptEngine* engine = sa->type->GetEngine();
+			asITypeInfo* subType = sa->type->GetSubType();
+
+			for (; d < max; d++)
+			{
+				*d = (void*)engine->CreateScriptObject(subType);
+				if (*d == 0)
+				{
+					// Set the remaining entries to null so the destructor 
+					// won't attempt to destroy invalid objects later
+					memset(d, 0, sizeof(void*) * (max - d));
+
+					// There is no need to set an exception on the context,
+					// as CreateScriptObject has already done that
+					return;
+				}
+			}
+		} else
+		{
+			// Set all elements to zero whether they are handles or primitives
+			void* d = (void*)(sa->array + start * sa->element_size);
+			memset(d, 0, (end - start) * sa->element_size);
+		}
+	}
+
+
+	void destruct(tm_script_array_t* sa, asUINT start, asUINT end) {
+		if (sa->sub_type_id & asTYPEID_MASK_OBJECT)
+		{
+			asIScriptEngine* engine = sa->type->GetEngine();
+
+			void** max = (void**)(sa->array + end * sizeof(void*));
+			void** d = (void**)(sa->array + start * sizeof(void*));
+
+			for (; d < max; d++)
+			{
+				if (*d) {
+					engine->ReleaseScriptObject(*d, sa->type->GetSubType());
+				}
+			}
+		}
+	}
+
 	void* index_operator(uint32_t i, tm_script_array_t* sa) {
-		return (sa->array + sa->element_size * i);
+		uint32_t size = (uint32_t)tm_carray_size(sa->array);
+		if (sa->array == 0 || i >= size)
+		{
+			// If this is called from a script we raise a script exception
+			asIScriptContext* ctx = asGetActiveContext();
+			if (ctx)
+				ctx->SetException("Index out of bounds");
+			return nullptr;
+		}
+
+		if ((sa->sub_type_id & asTYPEID_MASK_OBJECT) && !(sa->sub_type_id & asTYPEID_OBJHANDLE))
+			return *(void**)(sa->array + sa->element_size * i);
+		else
+			return (sa->array + sa->element_size * i);
+	}
+
+	void set_value(uint32_t i, void* value, tm_script_array_t* sa) {
+		void* ptr = index_operator(i, sa);
+		if (!ptr) {
+			return;
+		}
+		if ((sa->sub_type_id & ~asTYPEID_MASK_SEQNBR) && !(sa->sub_type_id & asTYPEID_OBJHANDLE))
+			sa->type->GetEngine()->AssignScriptObject(ptr, value, sa->type->GetSubType());
+		else if (sa->sub_type_id & asTYPEID_OBJHANDLE)
+		{
+			void* tmp = *(void**)ptr;
+			*(void**)ptr = *(void**)value;
+			sa->type->GetEngine()->AddRefScriptObject(*(void**)value, sa->type->GetSubType());
+			if (tmp)
+				sa->type->GetEngine()->ReleaseScriptObject(tmp, sa->type->GetSubType());
+		} else if (sa->sub_type_id == asTYPEID_BOOL ||
+			sa->sub_type_id == asTYPEID_INT8 ||
+			sa->sub_type_id == asTYPEID_UINT8)
+			*(char*)ptr = *(char*)value;
+		else if (sa->sub_type_id == asTYPEID_INT16 ||
+			sa->sub_type_id == asTYPEID_UINT16)
+			*(short*)ptr = *(short*)value;
+		else if (sa->sub_type_id == asTYPEID_INT32 ||
+			sa->sub_type_id == asTYPEID_UINT32 ||
+			sa->sub_type_id == asTYPEID_FLOAT ||
+			sa->sub_type_id > asTYPEID_DOUBLE) // enums have a type id larger than doubles
+			*(int*)ptr = *(int*)value;
+		else if (sa->sub_type_id == asTYPEID_INT64 ||
+			sa->sub_type_id == asTYPEID_UINT64 ||
+			sa->sub_type_id == asTYPEID_DOUBLE)
+			*(double*)ptr = *(double*)value;
 	}
 
 	tm_script_array_t* assign_operator(const tm_script_array_t* other, tm_script_array_t* sa) {
 		if(sa->element_size == other->element_size){
-			if(tm_carray_size(other->array) > 0){
-				tm_carray_resize(sa->array, other->element_size, _allocator);
-				memcpy(sa->array, other->array, tm_carray_size(other->array) * other->element_size);
+			uint32_t other_size = (uint32_t)tm_carray_size(other->array);
+			if(other_size > 0){
+				tm_carray_resize_with_size(sa->array, other_size, sa->element_size, _allocator);
+				for (uint32_t k = 0; k < other_size; ++k) {
+					set_value(k, index_operator(k, const_cast<tm_script_array_t*>(other)), sa);
+				}
 			} else {
 				tm_carray_shrink(sa->array, 0);
 			}
@@ -299,16 +408,49 @@ namespace tm_array {
 		return sa;
 	}
 
+	void resize(int delta, uint32_t index, tm_script_array_t* sa) {
+		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
+		if (delta < 0)
+		{
+			if (-delta > (int)current_size)
+				delta = -(int)current_size;
+			if (index > current_size + delta)
+				index = current_size + delta;
+		} else if (delta > 0)
+		{
+			if (index > current_size)
+				index = current_size;
+		}
+
+		if (delta == 0) return;
+		uint32_t capacity = (uint32_t)tm_carray_capacity(sa->array);
+		if (capacity < current_size + delta) {
+			tm_carray_grow_with_size(sa->array, current_size + delta,sa->element_size, _allocator);
+			if (index < current_size)
+				memcpy(sa->array + (index + delta) * sa->element_size, sa->array + index * sa->element_size, (current_size - index) * sa->element_size);
+			// Initialize the new elements with default values
+			construct(sa, index, index + delta);
+			tm_carray_header(sa->array)->size += delta;
+
+		} else if (delta < 0) {
+			destruct(sa, index, index - delta);
+			memmove(sa->array + index * sa->element_size, sa->array + (index - delta) * sa->element_size, (current_size - (index - delta)) * sa->element_size);
+			tm_carray_header(sa->array)->size += delta;
+		} else {
+			memmove(sa->array + (index + delta) * sa->element_size, sa->array + index * sa->element_size, (current_size - index) * sa->element_size);
+			construct(sa, index, index + delta);
+			tm_carray_header(sa->array)->size += delta;
+		}
+	}
+
+
 	void insert_element_at(asUINT i, void* obj, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
-		if (i < current_size) {
+		if (i <= current_size) {
 			//Resize to fit the new object
-			tm_carray_ensure(sa->array, current_size + 1, _allocator);
-			//Move everything above i
-			memcpy(sa->array + sa->element_size * i + 1, sa->array + sa->element_size * i, sa->element_size * (current_size - i));
+			resize(1, i, sa);
 			//Copy in the new element
-			memcpy(sa->array + sa->element_size * i, obj, sa->element_size);
-			tm_carray_header(sa->array)->size++;
+			set_value(i, obj, sa);
 		} else {
 			asIScriptContext* ctx = asGetActiveContext();
 			if (ctx) {
@@ -321,16 +463,14 @@ namespace tm_array {
 	void insert_array_at(asUINT i, tm_script_array_t* other, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
 		if (i < current_size) {
-			uint32_t other_size = (uint32_t)tm_carray_size(other);
+			uint32_t other_size = (uint32_t)tm_carray_size(other->array);
 			if (other_size > 0) {
 				//Resize to fit the new objects
-				tm_carray_ensure(sa->array, current_size + other_size, _allocator);
-				//Move everything above i
-				memcpy(sa->array + sa->element_size * i + other_size * sa->element_size, sa->array + sa->element_size * i, sa->element_size * (current_size - i));
-				//Copy in the new element
-				memcpy(sa->array + sa->element_size * i, other->array, sa->element_size * other_size);
-				//write new size
-				tm_carray_header(sa->array)->size += other_size;
+				resize(other_size, i, sa);
+				//Copy in the new elements
+				for (uint32_t k = 0; k < other_size; ++k) {
+					set_value(i + k, index_operator(k, other), sa);
+				}
 			}
 		} else {
 			asIScriptContext* ctx = asGetActiveContext();
@@ -341,19 +481,17 @@ namespace tm_array {
 		}
 	}
 
+	
+
 	void push(void* obj, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
-		tm_carray_ensure(sa->array, current_size + 1, _allocator);
-		memcpy(sa->array + current_size * sa->element_size, obj, sa->element_size);
-		tm_carray_header(sa->array)->size++;
+		insert_element_at(current_size, obj, sa);
 	}
 
 	void erase(uint32_t i, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
 		if (i < current_size) {
-			//Move everything above i
-			memcpy(sa->array + sa->element_size * i, sa->array + sa->element_size * i + 1, sa->element_size * (current_size - i));
-			tm_carray_header(sa->array)->size--;
+			resize(-1, i, sa);
 		} else {
 			asIScriptContext* ctx = asGetActiveContext();
 			if (ctx) {
@@ -363,23 +501,20 @@ namespace tm_array {
 		}
 	}
 
-	void* pop(void* obj, tm_script_array_t* sa) {
+	void pop(tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
-		void* ret = sa->array + sa->element_size * current_size - 1;
-		tm_carray_shrink(sa->array, current_size - 1);
-		return ret;
+		resize(-1, current_size, sa);
 	}
 
 	void erase_range(uint32_t i, uint32_t count, tm_script_array_t* sa) {
+		if (count == 0) return;
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
 		if (i + count < current_size) {
-			//Move everything above i
-			memcpy(sa->array + sa->element_size * i, sa->array + sa->element_size * i + count, sa->element_size * (current_size - i));
-			tm_carray_header(sa->array)->size -= count;
+			resize((int)count * -1, i, sa);
 		} else {
 			asIScriptContext* ctx = asGetActiveContext();
 			if (ctx) {
-				ctx->SetException("Index or range out of bounds");
+				ctx->SetException("Range out of bounds");
 			}
 			return;
 		}
@@ -394,7 +529,8 @@ namespace tm_array {
 	}
 
 	void resize(uint32_t count, tm_script_array_t* sa) {
-		tm_carray_resize(sa->array, count, _allocator);
+		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
+		resize((int)count - (int)current_size, (uint32_t)-1, sa);
 	}
 
 	uint32_t get_ref_count(tm_script_array_t* sa) {
@@ -460,15 +596,15 @@ namespace tm_array {
 		r = engine->RegisterObjectMethod("tm_array<T>", "T &opIndex(uint index)", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "const T &opIndex(uint index) const", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "tm_array<T> &opAssign(const tm_array<T>&in)", asFUNCTION(assign_operator), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void insert_at(uint index, const T&in value)", asFUNCTION(insert_element_at), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void insert_at(uint index, const tm_array<T>& value)", asFUNCTION(insert_array_at), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array<T>", "void insert(uint index, const T&in value)", asFUNCTION(insert_element_at), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array<T>", "void insert(uint index, const tm_array<T>& value)", asFUNCTION(insert_array_at), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "void push(const T&in value)", asFUNCTION(push), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "void erase(uint index)", asFUNCTION(erase), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "T& pop()", asFUNCTION(pop), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array<T>", "void pop()", asFUNCTION(pop), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "void erase_range(uint start, uint count)", asFUNCTION(erase_range), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array<T>", "uint size()", asFUNCTION(size), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "bool is_empty()", asFUNCTION(is_empty), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void resize(uint size)", asFUNCTION(resize), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array<T>", "bool empty()", asFUNCTION(is_empty), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array<T>", "void resize(uint size)", asFUNCTIONPR(resize,(uint32_t, tm_script_array_t*), void), asCALL_CDECL_OBJLAST);
 
 		// Register GC behaviours in case the array needs to be garbage collected
 		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_GETREFCOUNT, "int f()", asFUNCTION(get_ref_count), asCALL_CDECL_OBJLAST);

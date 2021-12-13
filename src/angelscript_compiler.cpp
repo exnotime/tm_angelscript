@@ -137,7 +137,7 @@ namespace as_compiler {
 			return nullptr;
 		}
 		ByteStream bs(bc, size);
-		asIScriptModule* mod = _engine->GetModule(name, asEGMFlags::asGM_CREATE_IF_NOT_EXISTS);
+		asIScriptModule* mod = _engine->GetModule(name, asEGMFlags::asGM_ALWAYS_CREATE);
 		bool debug;
 		mod->LoadByteCode(&bs, &debug);
 		//TODO: Add logging
