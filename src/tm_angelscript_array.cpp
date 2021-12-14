@@ -143,6 +143,9 @@ namespace tm_array {
 	}
 
 	void destroy(tm_script_array_t* sa) {
+		if (sa->type) {
+			sa->type->Release();
+		}
 		tm_carray_free_with_size(sa->array, sa->element_size, _allocator);
 		tm_free(_allocator, sa, sizeof(tm_script_array_t));
 	}

@@ -163,6 +163,9 @@ void setup_angelscript() {
 	as_compiler::initialize(script_engine);
 	//Register message callback
 	script_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
+	script_engine->SetEngineProperty(asEP_AUTO_GARBAGE_COLLECT, false);
+	script_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true); //to have 'c' mean a single char
+	script_engine->SetEngineProperty(asEP_ALLOW_MULTILINE_STRINGS, true);
 	//TODO: Create context manager
 	script_context = script_engine->CreateContext();
 	//Register engine interfaces
@@ -197,6 +200,7 @@ void run_angelscript_function(asIScriptFunction* func) {
 }
 
 void shutdown_angelscript() {
+	tm_string::destroy_string_factory(&_tm_as_allocator.allocator);
 	script_context->Release();
 	script_engine->ShutDownAndRelease();
 	tm_hash_free(&_tm_as_allocator.alloc_map);
@@ -315,7 +319,9 @@ void simulation_stop(tm_simulation_state_o* state, struct tm_entity_commands_o* 
 			//TODO: Push stop args
 			run_angelscript_function(_simulations[i].stop_func);
 		}
+		_simulations->as_module->Discard();
 	}
+
 	tm_carray_free(_simulations, &_tm_as_allocator.allocator);
 	if (state) {
 		tm_free( &_tm_as_allocator.allocator, state, sizeof(tm_simulation_state_o*));
@@ -332,6 +338,11 @@ void simulation_tick(tm_simulation_state_o* state, tm_simulation_frame_args_t* a
 			run_angelscript_function(_simulations[i].tick_func);
 		}
 	}
+
+	//Run garbage collection
+	//TODO: Scale garbage collection to keep up with garbage build up
+	script_engine->GarbageCollect(asGC_ONE_STEP);
+
 }
 void simulation_hot_reload(tm_simulation_state_o* state, struct tm_entity_commands_o* commands) {
 	uint32_t sim_count = (uint32_t)tm_carray_size(_simulations);
@@ -426,7 +437,6 @@ static void create_asset_type(tm_the_truth_o* tt) {
 	simulation_properties_aspect.custom_ui = simulation_properties__custom_ui;
 	tm_the_truth_api->set_aspect(tt, simulation_type, TM_TT_ASPECT__PROPERTIES, &simulation_properties_aspect);
 }
-
 // -- asset browser register interface
 static tm_tt_id_t asset_browser_create_script_module(struct tm_asset_browser_create_asset_o* inst, tm_the_truth_o* tt, tm_tt_undo_scope_t undo_scope)
 {

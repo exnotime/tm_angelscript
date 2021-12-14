@@ -97,8 +97,6 @@ namespace as_compiler {
 
 	void initialize(asIScriptEngine* engine) {
 		_engine = engine;
-		engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true); //to have '' mean a single char
-		//engine->SetEngineProperty(asEP_INIT_GLOBAL_VARS_AFTER_BUILD, true); //dont allocate memory for global variables, something you would have if you set up a compiler environment without any real engine functions bound
 	}
 
 	uint64_t compile_file_to_bytecode(asIScriptEngine* engine, const char* project_root, const char* main_file, const char* module_name, void** out_bytecode, tm_temp_allocator_i* ta) {

@@ -24,7 +24,7 @@ namespace tm_string {
 	static tm_allocator_i* _allocator = nullptr;
 
 	struct tm_string_factory : public asIStringFactory {
-		tm_string_factory(tm_allocator_i* a) {
+		void init(tm_allocator_i* a) {
 			_string_map = {};
 			_string_map.allocator = a;
 			_ref_map = {};
@@ -32,7 +32,11 @@ namespace tm_string {
 			tm_hash_clear(&_string_map);
 			tm_hash_clear(&_ref_map);
 		}
-		~tm_string_factory() {}
+
+		void destroy() {
+			tm_hash_clear(&_string_map);
+			tm_hash_clear(&_ref_map);
+		}
 
 		const void* GetStringConstant(const char* data, asUINT length) {
 			asAcquireExclusiveLock();
@@ -229,8 +233,9 @@ namespace tm_string {
 	void register_tm_string_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
 		//Is the string factory needed when we are not compiling?
 		_allocator = allocator;
-		void* str_fac = tm_alloc(allocator, sizeof(tm_string_factory));
-		_string_factory = new(str_fac) tm_string_factory(allocator);
+		_string_factory = (tm_string_factory*)tm_alloc(allocator, sizeof(tm_string_factory));
+		_string_factory = new(_string_factory) tm_string_factory();
+		_string_factory->init(allocator);
 		
 
 		int r = engine->RegisterObjectType("tm_str_t", sizeof(tm_str_t), asOBJ_VALUE | asGetTypeTraits<tm_str_t>());
@@ -258,6 +263,8 @@ namespace tm_string {
 
 	void destroy_string_factory(tm_allocator_i* allocator) {
 		if (_string_factory) {
+			_string_factory->destroy();
+			_string_factory->~tm_string_factory();
 			tm_free(allocator, _string_factory, sizeof(tm_string_factory));
 			_string_factory = nullptr;
 		}
