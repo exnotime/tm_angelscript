@@ -91,9 +91,12 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_types.h"
 #include "tm_angelscript_asset.h"
 #include "tm_angelscript.h"
-#include "tm_angelscript_entity_interface.h"
 #include "tm_angelscript_string.h"
 #include "tm_angelscript_array.h"
+#include "tm_angelscript_entity_interface.h"
+#include "tm_angelscript_component_interface.h"
+#include "tm_angelscript_simulation_interface.h"
+#include "tm_angelscript_the_truth_interface.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -172,7 +175,10 @@ void setup_angelscript() {
 	register_tm_types(script_engine);
 	tm_string::register_tm_string_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_array::register_tm_array(script_engine, &_tm_as_allocator.allocator);
+	tm_the_truth::register_the_truth_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_entity::register_tm_entity_interface(script_engine);
+	tm_component::register_component_interface(script_engine);
+	tm_simulation::register_simulation_interface(script_engine, &_tm_as_allocator.allocator);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -262,6 +268,10 @@ struct tm_script_simulation_t {
 	asIScriptFunction* reload_func;
 };
 
+static const char* simulation_start_declaration = "void simulation_start(const tm_simulation_start_args_t@ args)";
+static const char* simulation_tick_declaration = "void simulation_tick(const tm_simulation_frame_args_t@ args)";
+static const char* simulation_stop_declaration = "void simulation_stop()";
+
 //Array of simulations
 static tm_script_simulation_t* _simulations = nullptr;
 
@@ -290,9 +300,9 @@ static tm_simulation_state_o* simulation_start(tm_simulation_start_args_t* args)
 				_simulations[i].as_module = as_compiler::get_module_from_bytecode(module_name, bytecode_buffer.size, bytecode_buffer.data);
 				//Reflect entry points
 				if (_simulations[i].as_module) {
-					_simulations[i].start_func = _simulations[i].as_module->GetFunctionByDecl("void simulation_start()");
-					_simulations[i].tick_func = _simulations[i].as_module->GetFunctionByDecl("void simulation_tick(float)");
-					_simulations[i].stop_func = _simulations[i].as_module->GetFunctionByDecl("void simulation_stop()");
+					_simulations[i].start_func = _simulations[i].as_module->GetFunctionByDecl(simulation_start_declaration);
+					_simulations[i].tick_func = _simulations[i].as_module->GetFunctionByDecl(simulation_tick_declaration);
+					_simulations[i].stop_func = _simulations[i].as_module->GetFunctionByDecl(simulation_stop_declaration);
 				}
 			}
 		}
@@ -301,7 +311,7 @@ static tm_simulation_state_o* simulation_start(tm_simulation_start_args_t* args)
 	if (any_success) {
 		for (uint32_t i = 0; i < sim_count; ++i) {
 			prepare_angelscript_function(_simulations[i].start_func);
-			//TODO: Push start args
+			script_context->SetArgAddress(0, args);
 			run_angelscript_function(_simulations[i].start_func);
 		}
 		tm_simulation_state_o* state = (tm_simulation_state_o*)tm_alloc(&_tm_as_allocator.allocator, sizeof(tm_simulation_state_o*));
@@ -316,7 +326,6 @@ void simulation_stop(tm_simulation_state_o* state, struct tm_entity_commands_o* 
 	for (uint32_t i = 0; i < sim_count; ++i) {
 		if (_simulations[i].stop_func) {
 			prepare_angelscript_function(_simulations[i].stop_func);
-			//TODO: Push stop args
 			run_angelscript_function(_simulations[i].stop_func);
 		}
 		_simulations->as_module->Discard();
@@ -333,8 +342,7 @@ void simulation_tick(tm_simulation_state_o* state, tm_simulation_frame_args_t* a
 	for (uint32_t i = 0; i < sim_count; ++i) {
 		if (_simulations[i].tick_func) {
 			prepare_angelscript_function(_simulations[i].tick_func);
-			//TODO: Push full tick args
-			get_script_context()->SetArgFloat(0, args->dt);
+			get_script_context()->SetArgAddress(0, args);
 			run_angelscript_function(_simulations[i].tick_func);
 		}
 	}

@@ -35,10 +35,19 @@ namespace tm_entity {
 		return e;
 	}
 
+	//Extensions
+	//Creates an entity from an asset name
+	tm_entity_t create_entity_from_asset(tm_the_truth_o* tt, tm_tt_id_t asset_root, tm_entity_context_o* ctx, tm_str_t& name) {
+		tm_tt_id_t sphere = tm_the_truth_assets_api->asset_from_path(tt, asset_root, name.data);
+		const tm_the_truth_object_o* entity_read_obj = tm_the_truth_api->read(tt, sphere);
+		tm_tt_id_t sphere_asset = tm_the_truth_api->get_subobject(tt, entity_read_obj, TM_TT_PROP__ASSET__OBJECT);
+		return tm_entity_api->create_entity(ctx);
+	}
+
 	void register_tm_entity_interface(asIScriptEngine* engine) {
 		int r = engine->RegisterObjectType("tm_entity_context_o", sizeof(tm_entity_context_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
 		r = engine->RegisterObjectType("tm_component_i", sizeof(tm_component_i), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
-		r = engine->RegisterObjectType("tm_entity_t", sizeof(tm_entity_t), asOBJ_VALUE | asOBJ_POD);  AS_CHECK(r);
+		r = engine->RegisterTypedef("tm_entity_t", "uint64");  AS_CHECK(r);
 
 		r = engine->RegisterObjectType("tm_component_type_t", sizeof(tm_component_type_t), asOBJ_VALUE | asOBJ_POD);  AS_CHECK(r);
 
@@ -51,6 +60,9 @@ namespace tm_entity {
 		r = engine->RegisterGlobalFunction("tm_entity_context_o@ create_context(tm_entity_create_components flags)", asFUNCTION(create_context), asCALL_CDECL);
 		r = engine->RegisterGlobalFunction("void destroy_context(tm_entity_context_o@ ctx)", asFUNCTION(destroy_context), asCALL_CDECL);
 		r = engine->RegisterGlobalFunction("tm_entity_t create_entity(tm_entity_context_o@ ctx)", asFUNCTION(create_entity), asCALL_CDECL);
+		
+		r = engine->SetDefaultNamespace("tm_entity_ext_api");
+		r = engine->RegisterGlobalFunction("tm_entity_t create_entity_from_asset(tm_the_truth_o@ tt, tm_tt_id_t asset_root, tm_entity_context_o@ ctx, tm_str_t name)", asFUNCTION(create_entity_from_asset), asCALL_CDECL);
 		r = engine->SetDefaultNamespace("");
 	}
 }
