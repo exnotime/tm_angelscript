@@ -1,4 +1,4 @@
-#include "tm_angelscript_entity_interface.h"
+#include "tm_as_entity_api.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering simulation, %s, %d", __FILE__, __LINE__);} } while(false)

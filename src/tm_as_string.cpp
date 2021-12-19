@@ -1,4 +1,4 @@
-#include "tm_angelscript_string.h"
+#include "tm_as_string.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>

@@ -1,4 +1,4 @@
-#include "tm_angelscript_entity_interface.h"
+#include "tm_as_entity_api.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>

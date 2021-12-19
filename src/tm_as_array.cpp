@@ -1,4 +1,4 @@
-#include "tm_angelscript_array.h"
+#include "tm_as_array.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>

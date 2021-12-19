@@ -91,12 +91,12 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_types.h"
 #include "tm_angelscript_asset.h"
 #include "tm_angelscript.h"
-#include "tm_angelscript_string.h"
-#include "tm_angelscript_array.h"
-#include "tm_angelscript_entity_interface.h"
-#include "tm_angelscript_component_interface.h"
-#include "tm_angelscript_simulation_interface.h"
-#include "tm_angelscript_the_truth_interface.h"
+#include "tm_as_string.h"
+#include "tm_as_array.h"
+#include "tm_as_entity_api.h"
+#include "tm_as_component_api.h"
+#include "tm_as_simulation_api.h"
+#include "tm_as_the_truth_api.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
