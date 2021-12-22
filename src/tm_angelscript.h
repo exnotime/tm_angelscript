@@ -8,6 +8,7 @@ extern "C" {
 extern struct tm_logger_api* tm_logger_api;
 extern struct tm_os_thread_api* tm_thread_api;
 extern struct tm_os_api* tm_os_api;
+extern struct tm_input_api* tm_input_api;
 extern struct tm_error_api* tm_error_api;
 extern struct tm_api_registry_api* tm_global_api_registry;
 extern struct tm_temp_allocator_api* tm_temp_allocator_api;

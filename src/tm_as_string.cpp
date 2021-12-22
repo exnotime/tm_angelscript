@@ -133,6 +133,15 @@ namespace tm_string {
 		tm_free(_allocator, (void*)thisPointer->data, thisPointer->size + 1);
 	}
 
+	tm_str_t create_string(const char* str) 
+	{
+		size_t length = strlen(str);
+		char* s = (char*)tm_alloc(_allocator, length + 1);
+		memcpy(s, str, length);
+		s[length] = 0;
+		return TM_LITERAL(tm_str_t) { s, (uint32_t)length, true };
+	}
+
 	void tm_string_op_assign(tm_str_t& a_str, const tm_str_t& b_str) {
 		char* s = (char*)tm_alloc(_allocator, b_str.size + 1);
 		memcpy(s, b_str.data, b_str.size);

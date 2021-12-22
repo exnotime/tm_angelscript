@@ -13,5 +13,7 @@ namespace tm_array {
 		char* array;
 	};
 
+	void push(void* obj, tm_script_array_t* sa);
+	tm_script_array_t* create(asITypeInfo* ot, unsigned length, void* defaultValue);
 	void register_tm_array(asIScriptEngine* engine, tm_allocator_i* allocator);
 }

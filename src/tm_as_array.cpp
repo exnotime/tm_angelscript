@@ -2,7 +2,7 @@
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>
-#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering something Angelscript, %d", __LINE__);} } while(false)
+#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering array Angelscript, %d", __LINE__);} } while(false)
 
 extern "C" {
 #include <foundation/allocator.h>
@@ -22,7 +22,7 @@ namespace tm_array {
 
 	static tm_allocator_i* _allocator = nullptr;
 	
-	tm_script_array_t* create(asITypeInfo* ot, asUINT length, void* defaultValue) {
+	tm_script_array_t* create(asITypeInfo* ot, unsigned length, void* defaultValue) {
 		tm_script_array_t* sa = (tm_script_array_t*)tm_alloc(_allocator, sizeof(tm_script_array_t));
 		memset(sa, 0x0, sizeof(tm_script_array_t));
 		sa->sub_type_id = ot->GetSubTypeId();
@@ -585,37 +585,37 @@ namespace tm_array {
 		_allocator = allocator;
 		int r = 0;
 		engine->SetTypeInfoUserDataCleanupCallback(cleanup_typeinfo_array_cache, ARRAY_CACHE);
-		r = engine->RegisterObjectType("tm_array<class T>", 0, asOBJ_REF | asOBJ_GC | asOBJ_TEMPLATE);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_TEMPLATE_CALLBACK, "bool f(int&in, bool&out)", asFUNCTION(script_array_template_callback), asCALL_CDECL);
+		r = engine->RegisterObjectType("tm_array_t<class T>", 0, asOBJ_REF | asOBJ_GC | asOBJ_TEMPLATE);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_TEMPLATE_CALLBACK, "bool f(int&in, bool&out)", asFUNCTION(script_array_template_callback), asCALL_CDECL);
 		// Templates receive the object type as the first parameter. To the script writer this is hidden
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_FACTORY, "tm_array<T>@ f(int&in)", asFUNCTIONPR(create, (asITypeInfo*), tm_script_array_t*), asCALL_CDECL);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_FACTORY, "tm_array<T>@ f(int&in, uint length) explicit", asFUNCTIONPR(create, (asITypeInfo*, asUINT), tm_script_array_t*), asCALL_CDECL);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_FACTORY, "tm_array<T>@ f(int&in, uint length, const T &in value)", asFUNCTIONPR(create, (asITypeInfo*, asUINT, void*), tm_script_array_t*), asCALL_CDECL);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_FACTORY, "tm_array_t<T>@ f(int&in)", asFUNCTIONPR(create, (asITypeInfo*), tm_script_array_t*), asCALL_CDECL);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_FACTORY, "tm_array_t<T>@ f(int&in, uint length) explicit", asFUNCTIONPR(create, (asITypeInfo*, asUINT), tm_script_array_t*), asCALL_CDECL);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_FACTORY, "tm_array_t<T>@ f(int&in, uint length, const T &in value)", asFUNCTIONPR(create, (asITypeInfo*, asUINT, void*), tm_script_array_t*), asCALL_CDECL);
 		// Register the factory that will be used for initialization lists
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_LIST_FACTORY, "tm_array<T>@ f(int&in type, int&in list) {repeat T}", asFUNCTIONPR(create_list, (asITypeInfo*, void*), tm_script_array_t*), asCALL_CDECL);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_LIST_FACTORY, "tm_array_t<T>@ f(int&in type, int&in list) {repeat T}", asFUNCTIONPR(create_list, (asITypeInfo*, void*), tm_script_array_t*), asCALL_CDECL);
 		// The memory management methods
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_ADDREF, "void f()", asFUNCTION(add_ref), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_RELEASE, "void f()", asFUNCTION(release), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "T &opIndex(uint index)", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "const T &opIndex(uint index) const", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "tm_array<T> &opAssign(const tm_array<T>&in)", asFUNCTION(assign_operator), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void insert(uint index, const T&in value)", asFUNCTION(insert_element_at), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void insert(uint index, const tm_array<T>& value)", asFUNCTION(insert_array_at), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void push(const T&in value)", asFUNCTION(push), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void erase(uint index)", asFUNCTION(erase), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void pop()", asFUNCTION(pop), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void erase_range(uint start, uint count)", asFUNCTION(erase_range), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "uint size()", asFUNCTION(size), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "bool empty()", asFUNCTION(is_empty), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_array<T>", "void resize(uint size)", asFUNCTIONPR(resize,(uint32_t, tm_script_array_t*), void), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_ADDREF, "void f()", asFUNCTION(add_ref), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_RELEASE, "void f()", asFUNCTION(release), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "T &opIndex(uint index)", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "const T &opIndex(uint index) const", asFUNCTION(index_operator), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "tm_array_t<T> &opAssign(const tm_array_t<T>&in)", asFUNCTION(assign_operator), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void insert(uint index, const T&in value)", asFUNCTION(insert_element_at), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void insert(uint index, const tm_array_t<T>& value)", asFUNCTION(insert_array_at), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void push(const T&in value)", asFUNCTION(push), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void erase(uint index)", asFUNCTION(erase), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void pop()", asFUNCTION(pop), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void erase_range(uint start, uint count)", asFUNCTION(erase_range), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "uint size()", asFUNCTION(size), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "bool empty()", asFUNCTION(is_empty), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void resize(uint size)", asFUNCTIONPR(resize,(uint32_t, tm_script_array_t*), void), asCALL_CDECL_OBJLAST);
 
 		// Register GC behaviours in case the array needs to be garbage collected
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_GETREFCOUNT, "int f()", asFUNCTION(get_ref_count), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_SETGCFLAG, "void f()", asFUNCTION(set_flag), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_GETGCFLAG, "bool f()", asFUNCTION(get_flag), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_ENUMREFS, "void f(int&in)", asFUNCTION(enum_refs), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_array<T>", asBEHAVE_RELEASEREFS, "void f(int&in)", asFUNCTION(release_everything), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_GETREFCOUNT, "int f()", asFUNCTION(get_ref_count), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_SETGCFLAG, "void f()", asFUNCTION(set_flag), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_GETGCFLAG, "bool f()", asFUNCTION(get_flag), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_ENUMREFS, "void f(int&in)", asFUNCTION(enum_refs), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectBehaviour("tm_array_t<T>", asBEHAVE_RELEASEREFS, "void f(int&in)", asFUNCTION(release_everything), asCALL_CDECL_OBJLAST);
 
-		r = engine->RegisterDefaultArrayType("tm_array<T>");
+		r = engine->RegisterDefaultArrayType("tm_array_t<T>");
 	}
 }

@@ -2,7 +2,7 @@
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>
-#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering something Angelscript, %s, %d", __FILE__, __LINE__);} } while(false)
+#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering the truth Angelscript, %s, %d", __FILE__, __LINE__);} } while(false)
 
 extern "C" {
 #include <plugins/entity/entity.h>

@@ -38,6 +38,7 @@ extern "C" {
 #include <the_machinery/the_machinery.h>
 #include <plugins/simulation/simulation_entry.h>
 #include <plugins/simulation/simulation.h>
+#include <foundation/input.h>
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -81,7 +82,7 @@ struct tm_json_api* tm_json_api;
 struct tm_the_machinery_api* tm_the_machinery_api;
 struct tm_application_api* tm_application_api;
 struct tm_allocator_api* tm_allocator_api;
-
+struct tm_input_api* tm_input_api;
 
 #include <angelscript.h>
 
@@ -97,6 +98,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_component_api.h"
 #include "tm_as_simulation_api.h"
 #include "tm_as_the_truth_api.h"
+#include "tm_as_input_api.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -179,6 +181,7 @@ void setup_angelscript() {
 	tm_entity::register_tm_entity_interface(script_engine);
 	tm_component::register_component_interface(script_engine);
 	tm_simulation::register_simulation_interface(script_engine, &_tm_as_allocator.allocator);
+	tm_input::register_input_interface(script_engine);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -500,6 +503,7 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_application_api = tm_get_api(reg, tm_application_api);
 		tm_ui_api = tm_get_api(reg, tm_ui_api);
 		tm_allocator_api = tm_get_api(reg, tm_allocator_api);
+		tm_input_api = tm_get_api(reg, tm_input_api);
 
 		if (!already_loaded) {
 			setup_angelscript();
