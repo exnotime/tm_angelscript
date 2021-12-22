@@ -327,14 +327,12 @@ static tm_simulation_state_o* simulation_start(tm_simulation_start_args_t* args)
 void simulation_stop(tm_simulation_state_o* state, struct tm_entity_commands_o* commands) {
 	uint32_t sim_count = (uint32_t)tm_carray_size(_simulations);
 	for (uint32_t i = 0; i < sim_count; ++i) {
-		if (_simulations[i].stop_func) {
-			prepare_angelscript_function(_simulations[i].stop_func);
-			run_angelscript_function(_simulations[i].stop_func);
+		tm_script_simulation_t sim = _simulations[i];
+		if (sim.stop_func) {
+			prepare_angelscript_function(sim.stop_func);
+			run_angelscript_function(sim.stop_func);
 		}
-		_simulations->as_module->Discard();
 	}
-
-	tm_carray_free(_simulations, &_tm_as_allocator.allocator);
 	if (state) {
 		tm_free( &_tm_as_allocator.allocator, state, sizeof(tm_simulation_state_o*));
 	}

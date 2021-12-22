@@ -536,6 +536,10 @@ namespace tm_array {
 		resize((int)count - (int)current_size, (uint32_t)-1, sa);
 	}
 
+	void clear(tm_script_array_t* sa) {
+		resize(0, sa);
+	}
+
 	uint32_t get_ref_count(tm_script_array_t* sa) {
 		return sa->ref_count;
 	}
@@ -607,6 +611,7 @@ namespace tm_array {
 		r = engine->RegisterObjectMethod("tm_array_t<T>", "void erase_range(uint start, uint count)", asFUNCTION(erase_range), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array_t<T>", "uint size()", asFUNCTION(size), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array_t<T>", "bool empty()", asFUNCTION(is_empty), asCALL_CDECL_OBJLAST);
+		r = engine->RegisterObjectMethod("tm_array_t<T>", "void clear()", asFUNCTION(size), asCALL_CDECL_OBJLAST);
 		r = engine->RegisterObjectMethod("tm_array_t<T>", "void resize(uint size)", asFUNCTIONPR(resize,(uint32_t, tm_script_array_t*), void), asCALL_CDECL_OBJLAST);
 
 		// Register GC behaviours in case the array needs to be garbage collected
