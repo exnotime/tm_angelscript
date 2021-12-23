@@ -43,8 +43,8 @@ extern struct tm_the_truth_common_types_api* tm_the_truth_common_types_api;
 extern struct tm_sprintf_api* tm_sprintf_api;
 extern struct tm_config_api* tm_config_api;
 extern struct tm_json_api* tm_json_api; 
-extern struct tm_the_machinery_api* tm_the_machinery_api;
-
+extern struct tm_the_machinery_api* tm_the_machinery_api; 
+extern struct tm_entity_commands_api* tm_entity_commands_api;
 struct tm_allocator_i;
 struct tm_the_truth_o;
 

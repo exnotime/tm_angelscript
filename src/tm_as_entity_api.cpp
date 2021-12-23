@@ -39,6 +39,14 @@ namespace tm_entity {
 		tm_entity_api->clear_world(ctx);
 	}
 
+	void destroy_entity_command(tm_entity_commands_o* cmd, tm_entity_t e) {
+		tm_entity_commands_api->destroy_entity(cmd, e);
+	}
+
+	void clear_world_command(tm_entity_commands_o* cmd) {
+		tm_entity_commands_api->clear_world(cmd);
+	}
+
 	//Extensions
 	//Creates an entity from an asset name
 	tm_entity_t create_entity_from_asset(tm_the_truth_o* tt, tm_tt_id_t asset_root, tm_entity_context_o* ctx, tm_str_t& name) {
@@ -51,6 +59,7 @@ namespace tm_entity {
 	void register_tm_entity_interface(asIScriptEngine* engine) {
 		int r = engine->RegisterObjectType("tm_entity_context_o", sizeof(tm_entity_context_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
 		r = engine->RegisterObjectType("tm_component_i", sizeof(tm_component_i), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
+		r = engine->RegisterObjectType("tm_entity_commands_o", sizeof(tm_entity_commands_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
 		r = engine->RegisterTypedef("tm_entity_t", "uint64");  AS_CHECK(r);
 
 		r = engine->RegisterObjectType("tm_component_type_t", sizeof(tm_component_type_t), asOBJ_VALUE | asOBJ_POD);  AS_CHECK(r);
@@ -66,6 +75,9 @@ namespace tm_entity {
 		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_t create_entity(tm_entity_context_o@ ctx)", asFUNCTION(create_entity), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void destroy_entity(tm_entity_context_o@ ctx, tm_entity_t e)", asFUNCTION(destroy_entity), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void clear_world(tm_entity_context_o@ ctx)", asFUNCTION(clear_world), asCALL_CDECL));
+		AS_CHECK(engine->SetDefaultNamespace("tm_entity_commands_api"));
+		AS_CHECK(engine->RegisterGlobalFunction("void destroy_entity(tm_entity_commands_o@ cmds, tm_entity_t e)", asFUNCTION(destroy_entity), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void clear_world(tm_entity_commands_o@ cmds)", asFUNCTION(clear_world_command), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_ext_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_t create_entity_from_asset(tm_the_truth_o@ tt, tm_tt_id_t asset_root, tm_entity_context_o@ ctx, tm_str_t name)", asFUNCTION(create_entity_from_asset), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));

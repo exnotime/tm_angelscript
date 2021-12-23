@@ -83,6 +83,7 @@ struct tm_the_machinery_api* tm_the_machinery_api;
 struct tm_application_api* tm_application_api;
 struct tm_allocator_api* tm_allocator_api;
 struct tm_input_api* tm_input_api;
+struct tm_entity_commands_api* tm_entity_commands_api;
 
 #include <angelscript.h>
 
@@ -208,6 +209,44 @@ void run_angelscript_function(asIScriptFunction* func) {
 	}
 }
 
+void wait_until_finished() {
+	bool done = false;
+	asEContextState state = script_context->GetState();
+	while (!done) {
+		switch (state)
+		{
+		case asEXECUTION_FINISHED:
+			done = true;
+			break;
+		case asEXECUTION_SUSPENDED:
+			break;
+		case asEXECUTION_ABORTED:
+			done = true;
+			break;
+		case asEXECUTION_EXCEPTION:
+			done = true;
+			break;
+		case asEXECUTION_PREPARED:
+			break;
+		case asEXECUTION_UNINITIALIZED:
+			done = true;
+			break;
+		case asEXECUTION_ACTIVE:
+			break;
+		case asEXECUTION_ERROR:
+			done = true;
+			break;
+		default:
+			done = true;
+			break;
+		}
+		if (!done) {
+			Sleep(1);
+			state = script_context->GetState();
+		}
+	}
+}
+
 void shutdown_angelscript() {
 	tm_string::destroy_string_factory(&_tm_as_allocator.allocator);
 	script_context->Release();
@@ -273,7 +312,7 @@ struct tm_script_simulation_t {
 
 static const char* simulation_start_declaration = "void simulation_start(const tm_simulation_start_args_t@ args)";
 static const char* simulation_tick_declaration = "void simulation_tick(const tm_simulation_frame_args_t@ args)";
-static const char* simulation_stop_declaration = "void simulation_stop()";
+static const char* simulation_stop_declaration = "void simulation_stop(tm_entity_commands_o@ commands)";
 
 //Array of simulations
 static tm_script_simulation_t* _simulations = nullptr;
@@ -325,11 +364,13 @@ static tm_simulation_state_o* simulation_start(tm_simulation_start_args_t* args)
 }
 
 void simulation_stop(tm_simulation_state_o* state, struct tm_entity_commands_o* commands) {
+	wait_until_finished();
 	uint32_t sim_count = (uint32_t)tm_carray_size(_simulations);
 	for (uint32_t i = 0; i < sim_count; ++i) {
 		tm_script_simulation_t sim = _simulations[i];
 		if (sim.stop_func) {
 			prepare_angelscript_function(sim.stop_func);
+			get_script_context()->SetArgAddress(0, commands);
 			run_angelscript_function(sim.stop_func);
 		}
 	}
@@ -502,6 +543,7 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_ui_api = tm_get_api(reg, tm_ui_api);
 		tm_allocator_api = tm_get_api(reg, tm_allocator_api);
 		tm_input_api = tm_get_api(reg, tm_input_api);
+		tm_entity_commands_api = tm_get_api(reg, tm_entity_commands_api);
 
 		if (!already_loaded) {
 			setup_angelscript();
