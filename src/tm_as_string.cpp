@@ -237,6 +237,11 @@ namespace tm_string {
 		tm_logger_api->print(tm_log_type::TM_LOG_TYPE_DEBUG, s.data);
 	}
 
+	//TODO: Lookup if this is the same as TM_STATIC_HASH
+	tm_strhash_t hash_string(const tm_str_t& s) {
+		return tm_murmur_hash_str(s);
+	}
+
 	//To get up and running quickly I have omitted the formatting functions (to uint/float etc) and find functions
 
 	void register_tm_string_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
@@ -268,6 +273,9 @@ namespace tm_string {
 		r = engine->RegisterObjectMethod("tm_str_t", "void erase(uint pos, int count = -1)", asFUNCTION(tm_string_erase), asCALL_CDECL_OBJLAST);
 
 		r = engine->RegisterGlobalFunction("void print(const tm_str_t &in s)", asFUNCTION(tm_print_string), asCALL_CDECL);
+
+		engine->RegisterTypedef("tm_strhash_t", "uint64");
+		r = engine->RegisterGlobalFunction("tm_strhash_t hash_string(const tm_str_t &in s)", asFUNCTION(tm_print_string), asCALL_CDECL);
 	}
 
 	void destroy_string_factory(tm_allocator_i* allocator) {

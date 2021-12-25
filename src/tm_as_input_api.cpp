@@ -71,6 +71,10 @@ namespace tm_input {
 		return nullptr;
 	}
 
+	tm_input_data_t input_source_state(uint64_t controller, uint64_t item, tm_input_source_i* obj) {
+		return obj->state(controller, item);
+	}
+
 	tm_script_array_t* input_sources() {
 		tm_input_source_i** sources;
 		uint32_t count = tm_input_api->sources(&sources);
@@ -134,7 +138,7 @@ namespace tm_input {
 		AS_CHECK(engine->RegisterObjectMethod("tm_input_source_i", "tm_array_t<uint64>@ controllers()", asFUNCTION(input_source_controllers), asCALL_CDECL_OBJLAST));
 		AS_CHECK(engine->RegisterObjectMethod("tm_input_source_i", "tm_array_t<tm_input_item_t>@ items()", asFUNCTION(input_source_items), asCALL_CDECL_OBJLAST));
 		AS_CHECK(engine->RegisterObjectMethod("tm_input_source_i", "tm_array_t<tm_input_event_t>@ events(uint64 start, uint max_count = 8)", asFUNCTION(input_source_events), asCALL_CDECL_OBJLAST));
-		
+		AS_CHECK(engine->RegisterObjectMethod("tm_input_source_i", "tm_input_data_t state(uint64 controller, uint64 item)", asFUNCTION(input_source_state), asCALL_CDECL_OBJLAST));
 
 		AS_CHECK(engine->RegisterEnum("tm_input_controller_type"));
 		AS_CHECK(engine->RegisterEnumValue("tm_input_controller_type", "TM_INPUT_CONTROLLER_TYPE_NONE", TM_INPUT_CONTROLLER_TYPE_NONE));

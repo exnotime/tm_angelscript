@@ -38,7 +38,9 @@ extern "C" {
 #include <the_machinery/the_machinery.h>
 #include <plugins/simulation/simulation_entry.h>
 #include <plugins/simulation/simulation.h>
+#include <plugins/entity/transform_component.h>
 #include <foundation/input.h>
+#include <foundation/camera.h>
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -84,7 +86,9 @@ struct tm_application_api* tm_application_api;
 struct tm_allocator_api* tm_allocator_api;
 struct tm_input_api* tm_input_api;
 struct tm_entity_commands_api* tm_entity_commands_api;
-
+struct tm_simulation_api* tm_simulation_api;
+struct tm_transform_component_api* tm_transform_component_api;
+struct tm_camera_api* tm_camera_api;
 #include <angelscript.h>
 
 static asIScriptEngine* script_engine;
@@ -100,6 +104,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_simulation_api.h"
 #include "tm_as_the_truth_api.h"
 #include "tm_as_input_api.h"
+#include "tm_as_camera_api.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -167,7 +172,6 @@ void setup_angelscript() {
 	//Create engine
 	script_engine = asCreateScriptEngine();
 	as_compiler::initialize(script_engine);
-	//Register message callback
 	script_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
 	script_engine->SetEngineProperty(asEP_AUTO_GARBAGE_COLLECT, false);
 	script_engine->SetEngineProperty(asEP_USE_CHARACTER_LITERALS, true); //to have 'c' mean a single char
@@ -183,6 +187,7 @@ void setup_angelscript() {
 	tm_component::register_component_interface(script_engine);
 	tm_simulation::register_simulation_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_input::register_input_interface(script_engine);
+	tm_camera::register_camera_interface(script_engine, &_tm_as_allocator.allocator);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -544,6 +549,10 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_allocator_api = tm_get_api(reg, tm_allocator_api);
 		tm_input_api = tm_get_api(reg, tm_input_api);
 		tm_entity_commands_api = tm_get_api(reg, tm_entity_commands_api);
+		tm_simulation_api = tm_get_api(reg, tm_simulation_api);
+		tm_transform_component_api = tm_get_api(reg, tm_transform_component_api);
+		tm_camera_api = tm_get_api(reg, tm_camera_api);
+
 
 		if (!already_loaded) {
 			setup_angelscript();

@@ -1,7 +1,7 @@
 #include "tm_as_entity_api.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
-#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering something Angelscript, %d", __LINE__);} } while(false)
+#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering entity Angelscript, %s:%d", __FILE__, __LINE__);} } while(false)
 
 extern "C" {
 #include <plugins/entity/entity.h>
@@ -61,8 +61,6 @@ namespace tm_entity {
 		r = engine->RegisterObjectType("tm_component_i", sizeof(tm_component_i), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
 		r = engine->RegisterObjectType("tm_entity_commands_o", sizeof(tm_entity_commands_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
 		r = engine->RegisterTypedef("tm_entity_t", "uint64");  AS_CHECK(r);
-
-		r = engine->RegisterObjectType("tm_component_type_t", sizeof(tm_component_type_t), asOBJ_VALUE | asOBJ_POD);  AS_CHECK(r);
 
 		AS_CHECK(engine->RegisterEnum("tm_entity_create_components")); 
 		AS_CHECK(engine->RegisterEnumValue("tm_entity_create_components", "TM_ENTITY_CREATE_COMPONENTS_NONE", TM_ENTITY_CREATE_COMPONENTS_NONE));

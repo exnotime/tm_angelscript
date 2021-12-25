@@ -45,6 +45,11 @@ extern struct tm_config_api* tm_config_api;
 extern struct tm_json_api* tm_json_api; 
 extern struct tm_the_machinery_api* tm_the_machinery_api; 
 extern struct tm_entity_commands_api* tm_entity_commands_api;
+extern struct tm_simulation_api* tm_simulation_api;
+extern struct tm_transform_component_api* tm_transform_component_api;
+extern struct tm_camera_api* tm_camera_api;
+
+
 struct tm_allocator_i;
 struct tm_the_truth_o;
 
