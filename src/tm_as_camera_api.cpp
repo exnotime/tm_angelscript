@@ -8,6 +8,7 @@ extern "C" {
 #include <plugins/entity/entity.h>
 #include <foundation/log.h>
 #include <foundation/camera.h>
+#include <plugins/physx/physx_scene.h>
 }
 namespace tm_camera {
 
