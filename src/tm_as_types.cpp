@@ -176,10 +176,10 @@ void register_tm_types(asIScriptEngine* engine)
 	AS_CHECK(engine->RegisterObjectType("tm_uuid_t", sizeof(tm_uuid_t), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<tm_uuid_t>()));
 
 	AS_CHECK(engine->RegisterObjectType("tm_color_srgb_t", sizeof(tm_color_srgb_t), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<tm_color_srgb_t>()));
-	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 x", asOFFSET(tm_color_srgb_t, r)));
-	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 y", asOFFSET(tm_color_srgb_t, g)));
-	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 z", asOFFSET(tm_color_srgb_t, b)));
-	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 w", asOFFSET(tm_color_srgb_t, a)));
+	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 r", asOFFSET(tm_color_srgb_t, r)));
+	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 g", asOFFSET(tm_color_srgb_t, g)));
+	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 b", asOFFSET(tm_color_srgb_t, b)));
+	AS_CHECK(engine->RegisterObjectProperty("tm_color_srgb_t", "uint8 a", asOFFSET(tm_color_srgb_t, a)));
 	AS_CHECK(engine->RegisterTypedef("tm_tt_type_t", "uint64"));
 	AS_CHECK(engine->RegisterTypedef("tm_tt_id_t", "uint64"));
 	AS_CHECK(engine->RegisterGlobalFunction("tm_tt_type_t tm_tt_type(tm_tt_id_t id)", asFUNCTION(tm_tt_type), asCALL_CDECL));

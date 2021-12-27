@@ -111,10 +111,11 @@ namespace tm_component {
 		tm_transform_component_api->set_local_transform(man, e, t);
 	}
 
-
 	void register_component_interface(asIScriptEngine* engine) {
 		AS_CHECK(engine->RegisterObjectType("tm_component_manager_o", sizeof(tm_component_manager_o*), asOBJ_REF | asOBJ_NOCOUNT));
 		
+		
+
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_type_t lookup_component_type(tm_entity_context_o@ ctx, tm_strhash_t hashed_name)", asFUNCTION(lookup_component_type), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_manager_o@ component_manager(tm_entity_context_o@ ctx, tm_component_type_t type)", asFUNCTION(component_manager), asCALL_CDECL));

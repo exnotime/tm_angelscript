@@ -105,6 +105,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_the_truth_api.h"
 #include "tm_as_input_api.h"
 #include "tm_as_camera_api.h"
+#include "tm_as_script_component.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -188,6 +189,7 @@ void setup_angelscript() {
 	tm_simulation::register_simulation_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_input::register_input_interface(script_engine);
 	tm_camera::register_camera_interface(script_engine, &_tm_as_allocator.allocator);
+	tm_script_component::register_script_component_interface(script_engine, &_tm_as_allocator.allocator);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
