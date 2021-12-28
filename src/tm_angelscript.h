@@ -48,6 +48,7 @@ extern struct tm_entity_commands_api* tm_entity_commands_api;
 extern struct tm_simulation_api* tm_simulation_api;
 extern struct tm_transform_component_api* tm_transform_component_api;
 extern struct tm_camera_api* tm_camera_api;
+extern struct tm_physx_scene_api* tm_physx_scene_api;
 
 
 struct tm_allocator_i;

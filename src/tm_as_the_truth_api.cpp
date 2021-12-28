@@ -29,11 +29,6 @@ namespace tm_the_truth {
 	}
 
 	void register_the_truth_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
-
-		//Object declarations TODO: Move to separate file to sort out init order
-		AS_CHECK(engine->RegisterObjectType("tm_the_truth_o", sizeof(tm_the_truth_o*), asOBJ_REF | asOBJ_NOCOUNT));
-		AS_CHECK(engine->RegisterObjectType("tm_the_truth_object_o", sizeof(tm_the_truth_object_o*), asOBJ_REF | asOBJ_NOCOUNT));
-
 		//The Truth
 		AS_CHECK(engine->SetDefaultNamespace("tm_the_truth_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("const tm_the_truth_object_o@ read(tm_the_truth_o@ tt, tm_tt_id_t object)", asFUNCTION(read), asCALL_CDECL));

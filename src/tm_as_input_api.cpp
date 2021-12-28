@@ -122,7 +122,7 @@ namespace tm_input {
 		AS_CHECK(engine->RegisterObjectProperty("tm_input_data_t", "uint codepoint", asOFFSET(tm_input_data_t, codepoint)));
 
 		
-		AS_CHECK(engine->RegisterObjectType("tm_input_source_i", sizeof(tm_input_source_i), asOBJ_REF | asOBJ_NOCOUNT));
+		AS_CHECK(engine->RegisterObjectType("tm_input_source_i", sizeof(tm_input_source_i*), asOBJ_REF | asOBJ_NOCOUNT));
 
 		//We are currently missing the "extra" data. But since we dont know what it will contain it will need a special function for each type
 		AS_CHECK(engine->RegisterObjectType("tm_input_event_t", sizeof(tm_input_event_t), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<tm_input_event_t>()));

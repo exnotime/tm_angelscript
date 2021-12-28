@@ -41,6 +41,7 @@ extern "C" {
 #include <plugins/entity/transform_component.h>
 #include <foundation/input.h>
 #include <foundation/camera.h>
+#include <plugins/physx/physx_scene.h>
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -89,13 +90,14 @@ struct tm_entity_commands_api* tm_entity_commands_api;
 struct tm_simulation_api* tm_simulation_api;
 struct tm_transform_component_api* tm_transform_component_api;
 struct tm_camera_api* tm_camera_api;
+struct tm_physx_scene_api* tm_physx_scene_api;
+
 #include <angelscript.h>
 
 static asIScriptEngine* script_engine;
 static asIScriptContext* script_context; //TODO: Allow multiple
 
 #include "tm_as_types.h"
-#include "tm_angelscript_asset.h"
 #include "tm_angelscript.h"
 #include "tm_as_string.h"
 #include "tm_as_array.h"
@@ -106,6 +108,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_input_api.h"
 #include "tm_as_camera_api.h"
 #include "tm_as_script_component.h"
+#include "tm_as_physics_api.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -190,6 +193,7 @@ void setup_angelscript() {
 	tm_input::register_input_interface(script_engine);
 	tm_camera::register_camera_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_script_component::register_script_component_interface(script_engine, &_tm_as_allocator.allocator);
+	tm_physics::register_physics_interface(script_engine, &_tm_as_allocator.allocator);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -554,7 +558,7 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_simulation_api = tm_get_api(reg, tm_simulation_api);
 		tm_transform_component_api = tm_get_api(reg, tm_transform_component_api);
 		tm_camera_api = tm_get_api(reg, tm_camera_api);
-
+		tm_physx_scene_api = tm_get_api(reg, tm_physx_scene_api);
 
 		if (!already_loaded) {
 			setup_angelscript();

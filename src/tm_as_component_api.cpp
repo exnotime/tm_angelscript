@@ -112,14 +112,11 @@ namespace tm_component {
 	}
 
 	void register_component_interface(asIScriptEngine* engine) {
-		AS_CHECK(engine->RegisterObjectType("tm_component_manager_o", sizeof(tm_component_manager_o*), asOBJ_REF | asOBJ_NOCOUNT));
-		
-		
-
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_type_t lookup_component_type(tm_entity_context_o@ ctx, tm_strhash_t hashed_name)", asFUNCTION(lookup_component_type), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_manager_o@ component_manager(tm_entity_context_o@ ctx, tm_component_type_t type)", asFUNCTION(component_manager), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_manager_o@ transform_component_manager(tm_entity_context_o@ ctx)", asFUNCTION(transform_component_manager), asCALL_CDECL));
+
 		AS_CHECK(engine->SetDefaultNamespace("tm_transform_component_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t get_position(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(get_position), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void set_position(tm_component_manager_o@ manager, tm_entity_t e, tm_vec3_t v)", asFUNCTION(set_position), asCALL_CDECL));
@@ -129,7 +126,6 @@ namespace tm_component {
 		AS_CHECK(engine->RegisterGlobalFunction("void set_rotation(tm_component_manager_o@ manager, tm_entity_t e, tm_vec4_t v)", asFUNCTION(set_rotation), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("const tm_transform_t@ get_transform(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(get_transform), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void set_transform(tm_component_manager_o@ manager, tm_entity_t e,const tm_transform_t@ t)", asFUNCTION(set_transform), asCALL_CDECL));
-		
 		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t get_local_position(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(get_local_position), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void set_local_position(tm_component_manager_o@ manager, tm_entity_t e, tm_vec3_t v)", asFUNCTION(set_local_position), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t get_local_scale(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(get_local_scale), asCALL_CDECL));

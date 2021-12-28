@@ -1,4 +1,4 @@
-#include "tm_as_entity_api.h"
+#include "tm_as_camera_api.h"
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include "tm_as_types.h"//for transform
@@ -8,7 +8,6 @@ extern "C" {
 #include <plugins/entity/entity.h>
 #include <foundation/log.h>
 #include <foundation/camera.h>
-#include <plugins/physx/physx_scene.h>
 }
 namespace tm_camera {
 

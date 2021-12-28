@@ -57,11 +57,6 @@ namespace tm_entity {
 	}
 
 	void register_tm_entity_interface(asIScriptEngine* engine) {
-		int r = engine->RegisterObjectType("tm_entity_context_o", sizeof(tm_entity_context_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
-		r = engine->RegisterObjectType("tm_component_i", sizeof(tm_component_i), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
-		r = engine->RegisterObjectType("tm_entity_commands_o", sizeof(tm_entity_commands_o*), asOBJ_REF | asOBJ_NOCOUNT);  AS_CHECK(r);
-		r = engine->RegisterTypedef("tm_entity_t", "uint64");  AS_CHECK(r);
-
 		AS_CHECK(engine->RegisterEnum("tm_entity_create_components")); 
 		AS_CHECK(engine->RegisterEnumValue("tm_entity_create_components", "TM_ENTITY_CREATE_COMPONENTS_NONE", TM_ENTITY_CREATE_COMPONENTS_NONE));
 		AS_CHECK(engine->RegisterEnumValue("tm_entity_create_components", "TM_ENTITY_CREATE_COMPONENTS_ALL", TM_ENTITY_CREATE_COMPONENTS_ALL));

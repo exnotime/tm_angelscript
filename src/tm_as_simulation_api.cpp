@@ -26,16 +26,14 @@ namespace tm_simulation {
 	}
 
 	void register_simulation_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
-		AS_CHECK(engine->RegisterObjectType("tm_simulation_o", sizeof(tm_simulation_o*), asOBJ_REF | asOBJ_NOCOUNT));
-		AS_CHECK(engine->RegisterObjectType("tm_simulation_frame_args_t", sizeof(tm_simulation_frame_args_t*), asOBJ_REF | asOBJ_NOCOUNT));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "float dt", asOFFSET(tm_simulation_frame_args_t, dt)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "float dt_unscaled", asOFFSET(tm_simulation_frame_args_t, dt_unscaled)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "double time", asOFFSET(tm_simulation_frame_args_t, time)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "double time_unscaled", asOFFSET(tm_simulation_frame_args_t, time_unscaled)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "bool running_in_editor", asOFFSET(tm_simulation_frame_args_t, running_in_editor)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_entity_commands_o@ commands", asOFFSET(tm_simulation_frame_args_t, commands)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_physx_scene_o@ physx_scene", asOFFSET(tm_simulation_frame_args_t, physx_scene)));
 
-		AS_CHECK(engine->RegisterObjectType("tm_simulation_start_args_t", sizeof(tm_simulation_start_args_t), asOBJ_REF | asOBJ_NOCOUNT));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_start_args_t", "tm_the_truth_o@ tt", asOFFSET(tm_simulation_start_args_t, tt)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_start_args_t", "tm_entity_context_o@ entity_ctx", asOFFSET(tm_simulation_start_args_t, entity_ctx)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_start_args_t", "tm_simulation_o@ simulation_ctx", asOFFSET(tm_simulation_start_args_t, simulation_ctx)));
