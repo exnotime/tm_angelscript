@@ -60,4 +60,5 @@ void register_tm_types(asIScriptEngine* engine)
 	AS_CHECK(engine->RegisterObjectType("tm_simulation_frame_args_t", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_simulation_start_args_t", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_component_manager_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
+	AS_CHECK(engine->RegisterObjectType("tm_camera_t", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 }

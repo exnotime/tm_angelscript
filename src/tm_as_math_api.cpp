@@ -12,7 +12,7 @@ extern "C" {
 }
 namespace tm_math {
 
-#pragma region tm_vec2_t
+#pragma region Vector2
 	void construct_vec2(float x, float y, tm_vec2_t* obj) {
 		obj->x = x; obj->y = y;
 	}
@@ -95,7 +95,7 @@ namespace tm_math {
 	}
 
 #pragma endregion
-#pragma region tm_vec3_t
+#pragma region Vector3
 	//Vec3
 	void construct_vec3(float x, float y, float z, tm_vec3_t* obj) {
 		obj->x = x; obj->y = y; obj->z = z;
@@ -188,7 +188,7 @@ namespace tm_math {
 		return r;
 	}
 #pragma endregion
-#pragma region tm_vec4_t
+#pragma region Vector4
 	//Vec4
 	void construct_vec4(float x, float y, float z, float w, tm_vec4_t* obj) {
 		obj->x = x; obj->y = y; obj->z = z; obj->w = w;
@@ -291,6 +291,92 @@ namespace tm_math {
 		r.w = obj->w / x;
 		return r;
 	}
+#pragma endregion
+#pragma region Matrix4x4
+
+	tm_mat44_t mat44_identity() {
+		return *tm_mat44_identity();
+	}
+
+	tm_mat44_t mat44_from_translation(tm_vec3_t t) {
+		tm_mat44_t r;
+		tm_mat44_from_translation(&r, t);
+		return r;
+	}
+
+	tm_mat44_t mat44_from_scale(tm_vec3_t s) {
+		tm_mat44_t r;
+		tm_mat44_from_scale(&r, s);
+		return r;
+	}
+
+	tm_mat44_t mat44_from_quaternion(tm_vec4_t q) {
+		tm_mat44_t r;
+		tm_mat44_from_quaternion(&r, q);
+		return r;
+	}
+
+	tm_mat44_t mat44_from_translation_quaternion_scale(tm_vec3_t t, tm_vec4_t q, tm_vec3_t s) {
+		tm_mat44_t r;
+		tm_mat44_from_translation_quaternion_scale(&r,t,q,s);
+		return r;
+	}
+
+	tm_mat44_t mat44_mul(const tm_mat44_t& a, const tm_mat44_t& b) {
+		tm_mat44_t r;
+		tm_mat44_mul(&r, &a, &b);
+		return r;
+	}
+
+	tm_mat44_t mat44_transpose(const tm_mat44_t& m) {
+		tm_mat44_t r;
+		tm_mat44_transpose(&r, &m);
+		return r;
+	}
+
+	tm_mat44_t mat44_inverse(const tm_mat44_t& m) {
+		tm_mat44_t r;
+		tm_mat44_inverse(&r, &m);
+		return r;
+	}
+
+	tm_vec3_t mat44_transform(const tm_mat44_t& m, tm_vec3_t v) {
+		return tm_mat44_transform(&m, v);
+	}
+
+	tm_vec3_t mat44_transform_no_translation(const tm_mat44_t& m, tm_vec3_t v) {
+		return tm_mat44_transform_no_translation(&m, v);
+	}
+
+	tm_vec4_t mat44_transform_vec4(const tm_mat44_t& m, tm_vec4_t v) {
+		return tm_mat44_transform_vec4(&m, v);
+	}
+
+	float mat44_determinant33(const tm_mat44_t& m) {
+		return tm_mat44_determinant33(&m);
+	}
+
+	tm_vec4_t mat44_to_quaternion(const tm_mat44_t& m) {
+		return tm_mat44_to_quaternion(&m);
+	}
+
+	tm_vec3_t mat44_x(tm_mat44_t& m) {
+		return *tm_mat44_x(&m);
+	}
+
+	tm_vec3_t mat44_y(tm_mat44_t& m) {
+		return *tm_mat44_y(&m);
+	}
+
+	tm_vec3_t mat44_z(tm_mat44_t& m) {
+		return *tm_mat44_z(&m);
+	}
+
+	tm_vec3_t mat44_w(tm_mat44_t& m) {
+		return *tm_mat44_w(&m);
+	}
+
+
 #pragma endregion
 
 	void register_math_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
@@ -415,6 +501,35 @@ namespace tm_math {
 		AS_CHECK(engine->RegisterObjectProperty("tm_mat44_t", "float wy", asOFFSET(tm_mat44_t, wy)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_mat44_t", "float wz", asOFFSET(tm_mat44_t, wz)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_mat44_t", "float ww", asOFFSET(tm_mat44_t, ww)));
+
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_identity()", asFUNCTION(mat44_identity), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_from_translation(tm_vec3_t t)", asFUNCTION(mat44_from_translation), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_from_scale(tm_vec3_t s)", asFUNCTION(mat44_from_scale), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_from_quaternion(tm_vec4_t q)", asFUNCTION(mat44_from_quaternion), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_from_translation_quaternion_scale(tm_vec3_t t, tm_vec4_t q, tm_vec3_t s)", asFUNCTION(mat44_from_translation_quaternion_scale), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_mul(const tm_mat44_t a, const tm_mat44_t b)", asFUNCTION(mat44_mul), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_transpose(const tm_mat44_t m)", asFUNCTION(mat44_transpose), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_mat44_t tm_mat44_inverse(const tm_mat44_t m)", asFUNCTION(mat44_inverse), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_transform(const tm_mat44_t m, tm_vec3_t v)", asFUNCTION(mat44_transform), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_transform_no_translation(const tm_mat44_t m, tm_vec3_t v)", asFUNCTION(mat44_transform_no_translation), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t  tm_mat44_transform_vec4(const tm_mat44_t m, tm_vec4_t v)", asFUNCTION(mat44_transform_vec4), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("float      tm_mat44_determinant33(const tm_mat44_t m)", asFUNCTION(mat44_determinant33), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t  tm_mat44_to_quaternion(const tm_mat44_t m)", asFUNCTION(mat44_to_quaternion), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_x(tm_mat44_t m)", asFUNCTION(mat44_x), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_y(tm_mat44_t m)", asFUNCTION(mat44_y), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_z(tm_mat44_t m)", asFUNCTION(mat44_z), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t  tm_mat44_w(tm_mat44_t m)", asFUNCTION(mat44_w), asCALL_CDECL));
+
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_from_rotation(tm_vec3_t axis, float a)", asFUNCTION(tm_quaternion_from_rotation), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t tm_quaternion_to_rotation(tm_vec4_t q, float &out a)", asFUNCTION(tm_quaternion_to_rotation), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_mul(tm_vec4_t lhs, tm_vec4_t rhs)", asFUNCTION(tm_quaternion_mul), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_inverse(tm_vec4_t q)", asFUNCTION(tm_quaternion_inverse), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t tm_quaternion_rotate_vec3(tm_vec4_t q, tm_vec3_t v)", asFUNCTION(tm_quaternion_rotate_vec3), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_nlerp(tm_vec4_t a, tm_vec4_t b, float t)", asFUNCTION(tm_quaternion_nlerp), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t tm_quaternion_to_euler(tm_vec4_t q)", asFUNCTION(tm_quaternion_to_euler), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_from_euler(tm_vec3_t xyz)", asFUNCTION(tm_quaternion_from_euler), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_vec4_t tm_quaternion_from_direction(tm_vec3_t forward, tm_vec3_t up)", asFUNCTION(tm_quaternion_from_direction), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void tm_quaternion_to_xyz(tm_vec3_t &out x, tm_vec3_t &out y, tm_vec3_t &out z, tm_vec4_t q)", asFUNCTION(tm_quaternion_to_xyz), asCALL_CDECL));
 
 	}
 }

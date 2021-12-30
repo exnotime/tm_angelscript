@@ -56,6 +56,15 @@ namespace tm_entity {
 		return tm_entity_api->create_entity_from_asset(ctx, asset);
 	}
 
+	tm_camera_t* get_blackboard_camera(tm_entity_context_o* ctx) {
+		return (tm_camera_t*)tm_entity_api->get_blackboard_ptr(ctx, TM_ENTITY_BB__CAMERA);
+	}
+
+	tm_rect_t get_blackboard_viewport(tm_entity_context_o* ctx) {
+		tm_rect_t* rect = (tm_rect_t*)tm_entity_api->get_blackboard_ptr(ctx, TM_ENTITY_BB__UI_VIEWPORT_RECT);
+		return *rect;
+	}
+
 	void register_tm_entity_interface(asIScriptEngine* engine) {
 		AS_CHECK(engine->RegisterEnum("tm_entity_create_components")); 
 		AS_CHECK(engine->RegisterEnumValue("tm_entity_create_components", "TM_ENTITY_CREATE_COMPONENTS_NONE", TM_ENTITY_CREATE_COMPONENTS_NONE));
@@ -73,6 +82,8 @@ namespace tm_entity {
 		AS_CHECK(engine->RegisterGlobalFunction("void clear_world(tm_entity_commands_o@ cmds)", asFUNCTION(clear_world_command), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_ext_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_t create_entity_from_asset(tm_the_truth_o@ tt, tm_tt_id_t asset_root, tm_entity_context_o@ ctx, tm_str_t name)", asFUNCTION(create_entity_from_asset), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_camera_t@ get_blackboard_camera(tm_entity_context_o@ ctx)", asFUNCTION(get_blackboard_camera), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_rect_t get_blackboard_viewport(tm_entity_context_o@ ctx)", asFUNCTION(get_blackboard_viewport), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));
 	}
 }
