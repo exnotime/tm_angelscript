@@ -452,7 +452,7 @@ static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, 
 static float simulation_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object) {
 	TM_INIT_TEMP_ALLOCATOR(ta);
 
-	item_rect.y += tm_properties_view_api->ui_string(args, item_rect, "Name", "Name of simulation", object, TM_TT_PROP__SCRIPT_SIMULATION__NAME);
+	item_rect.y = tm_properties_view_api->ui_string(args, item_rect, "Name", "Name of simulation", object, TM_TT_PROP__SCRIPT_SIMULATION__NAME);
 
 	tm_tt_type_t module_type = tm_the_truth_api->object_type_from_name_hash(args->tt, TM_TT_TYPE_HASH__SCRIPT_MODULE);
 	tm_tt_id_t* modules = tm_the_truth_api->all_objects_of_type(args->tt, module_type, ta);
@@ -467,7 +467,7 @@ static float simulation_properties__custom_ui(struct tm_properties_ui_args_t* ar
 		module_names[i] = tm_the_truth_assets_api->object_asset_name(args->tt, modules[i - 1]);
 		module_list[i] = modules[i - 1];
 	}
-	item_rect.y += tm_properties_view_api->ui_reference_popup_picker(args, item_rect, "Module", "Selects the module", object, TM_TT_PROP__SCRIPT_SIMULATION__MODULE, module_names, module_list, module_count + 1);
+	item_rect.y = tm_properties_view_api->ui_reference_popup_picker(args, item_rect, "Module", "Selects the module", object, TM_TT_PROP__SCRIPT_SIMULATION__MODULE, module_names, module_list, module_count + 1);
 	TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
 	return item_rect.y;
 }
