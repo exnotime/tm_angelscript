@@ -64,8 +64,8 @@ namespace tm_camera {
 		transform->pos = tm_vec3_sub( tm_vec3_mul(forward, distance), pos);
 	}
 	//Custom version of update maya function. This one will always perform the transform and allows you to set the wanted distance
-	// Copied from the camera.c file in the engine repo and then modified
-	void update_maya_ext(tm_transform_t* tm, tm_vec3_t focus, tm_vec2_t rot, float distance)
+	// Based on update_maya from camera.c
+	void update_maya_ext(tm_transform_t* tm, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y, float max_y)
 	{
 		const tm_vec3_t p = tm_vec3_sub(tm->pos, focus);
 		float r = tm_vec3_length(p);
@@ -74,11 +74,11 @@ namespace tm_camera {
 		float tau = asinf(p.y / r);
 		float phi = atan2f(p.z, p.x);
 
-		phi += rot.x * 0.005f;
-		tau += rot.y * 0.005f;
+		phi += rot.x;
+		tau += rot.y;
 		r = distance;
 
-		tau = tau > 1.5f ? 1.5f : tau < -1.5f ? -1.5f : tau;
+		tau = tau > max_y ? max_y : tau < min_y ? min_y : tau;
 
 		const tm_vec3_t z = { cosf(phi) * cosf(tau), sinf(tau), sinf(phi) * cosf(tau) };
 		const tm_vec3_t t = { focus.x + r * z.x, focus.y + r * z.y, focus.z + r * z.z };
@@ -107,7 +107,7 @@ namespace tm_camera {
 		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t camera_forward(tm_camera_t@ camera)", asFUNCTION(camera_forward), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void look_at(const tm_transform_t@ transform, tm_vec3_t pos, tm_vec3_t global_up)", asFUNCTION(look_at), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void look_at_distance(const tm_transform_t@ transform, tm_vec3_t pos, tm_vec3_t global_up, float distance)", asFUNCTION(look_at_distance), asCALL_CDECL));
-		AS_CHECK(engine->RegisterGlobalFunction("void update_maya(const tm_transform_t@ transform, tm_vec3_t focus, tm_vec2_t rot, float distance)", asFUNCTION(update_maya_ext), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void update_maya(const tm_transform_t@ transform, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y = -1.5f, float max_y = 1.5f)", asFUNCTION(update_maya_ext), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));
 	}
 }
