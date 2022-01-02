@@ -396,20 +396,59 @@ namespace tm_array {
 			*(double*)ptr = *(double*)value;
 	}
 
-	tm_script_array_t* assign_operator(const tm_script_array_t* other, tm_script_array_t* sa) {
-		if(sa->element_size == other->element_size){
-			uint32_t other_size = (uint32_t)tm_carray_size(other->array);
-			if(other_size > 0){
-				tm_carray_resize_with_size(sa->array, other_size, sa->element_size, _allocator);
-				for (uint32_t k = 0; k < other_size; ++k) {
-					set_value(k, index_operator(k, const_cast<tm_script_array_t*>(other)), sa);
+	void copy_buffer(const tm_script_array_t* other, tm_script_array_t* sa)
+	{
+		asIScriptEngine* engine = sa->type->GetEngine();
+		uint32_t this_size = (uint32_t)tm_carray_size(sa->array);
+		uint32_t other_size = (uint32_t)tm_carray_size(other->array);
+		if (sa->sub_type_id & asTYPEID_OBJHANDLE)
+		{
+			// Copy the references and increase the reference counters
+			if (this_size > 0 && other_size > 0)
+			{
+				int count = this_size > other_size ? other_size : this_size;
+
+				void** max = (void**)(sa->array + count * sizeof(void*));
+				void** d = (void**)sa->array;
+				void** s = (void**)other->array;
+
+				for (; d < max; d++, s++)
+				{
+					void* tmp = *d;
+					*d = *s;
+					if (*d)
+						engine->AddRefScriptObject(*d, sa->type->GetSubType());
+					// Release the old ref after incrementing the new to avoid problem incase it is the same ref
+					if (tmp)
+						engine->ReleaseScriptObject(tmp, sa->type->GetSubType());
 				}
-			} else {
-				tm_carray_shrink(sa->array, 0);
 			}
 		}
-		return sa;
+		else
+		{
+			if (this_size > 0 && other_size > 0)
+			{
+				int count = this_size > other_size ? other_size : this_size;
+				if (sa->sub_type_id & asTYPEID_MASK_OBJECT)
+				{
+					// Call the assignment operator on all of the objects
+					void** max = (void**)(sa->array + count * sizeof(void*));
+					void** d = (void**)sa->array;
+					void** s = (void**)other->array;
+
+					asITypeInfo* subType = sa->type->GetSubType();
+					for (; d < max; d++, s++)
+						engine->AssignScriptObject(*d, *s, subType);
+				}
+				else
+				{
+					// Primitives are copied byte for byte
+					memcpy(sa->array, other->array, count * sa->element_size);
+				}
+			}
+		}
 	}
+	
 
 	void resize(int delta, uint32_t index, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
@@ -534,6 +573,20 @@ namespace tm_array {
 	void resize(uint32_t count, tm_script_array_t* sa) {
 		uint32_t current_size = (uint32_t)tm_carray_size(sa->array);
 		resize((int)count - (int)current_size, (uint32_t)-1, sa);
+	}
+
+	tm_script_array_t* assign_operator(const tm_script_array_t* other, tm_script_array_t* sa) {
+		if (sa->element_size == other->element_size) {
+			uint32_t other_size = (uint32_t)tm_carray_size(other->array);
+			if (other_size > 0) {
+				resize(other_size, sa);
+				copy_buffer(other, sa);
+			}
+			else {
+				tm_carray_shrink(sa->array, 0);
+			}
+		}
+		return sa;
 	}
 
 	void clear(tm_script_array_t* sa) {
