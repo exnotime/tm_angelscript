@@ -11,7 +11,16 @@ extern "C" {
 #include <foundation/math.inl>
 }
 namespace tm_math {
+#pragma region Scalar
+	float tm_scalar_abs(const float x) {
+		return fabsf(x);
+	}
 
+	float tm_scalar_clamp(const float x, const float min, const float max) {
+		return fmaxf(min, fminf(max, x));
+	}
+
+#pragma endregion 
 #pragma region Vector2
 	void construct_vec2(float x, float y, tm_vec2_t* obj) {
 		obj->x = x; obj->y = y;
@@ -380,6 +389,9 @@ namespace tm_math {
 #pragma endregion
 
 	void register_math_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
+
+		AS_CHECK(engine->RegisterGlobalFunction("float abs(const float x)", asFUNCTION(tm_scalar_abs), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("float clamp(const float x, const float min, const float max)", asFUNCTION(tm_scalar_clamp), asCALL_CDECL));
 
 		AS_CHECK(engine->RegisterObjectProperty("tm_vec2_t", "float x", asOFFSET(tm_vec2_t, x)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_vec2_t", "float y", asOFFSET(tm_vec2_t, y)));

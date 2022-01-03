@@ -77,7 +77,6 @@ namespace tm_camera {
 		phi += rot.x;
 		tau += rot.y;
 		r = distance;
-
 		tau = tau > max_y ? max_y : tau < min_y ? min_y : tau;
 
 		const tm_vec3_t z = { cosf(phi) * cosf(tau), sinf(tau), sinf(phi) * cosf(tau) };
