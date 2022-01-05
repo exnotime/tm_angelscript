@@ -82,6 +82,20 @@ namespace tm_physics {
 		 return nullptr;
 	}
 
+	tm_script_array_t* on_trigger(tm_physx_scene_o* physx) {
+		tm_physx_on_trigger_t* triggers = tm_physx_scene_api->on_trigger(physx);
+		uint64_t trigger_count = tm_carray_size(triggers);
+		if (asIScriptContext* ctx = asGetActiveContext()) {
+			asITypeInfo* type = ctx->GetEngine()->GetTypeInfoByDecl("tm_array_t<tm_physx_on_trigger_t>");
+			tm_script_array_t* output_array = tm_array::create(type, 0, nullptr);
+			for (uint64_t i = 0; i < trigger_count; ++i) {
+				tm_array::push(&triggers[i], output_array);
+			}
+			return output_array;
+		}
+		return nullptr;
+	}
+
 	void update(tm_physx_scene_o* physx, float dt) {
 		tm_physx_scene_api->update(physx, dt);
 	}
@@ -105,6 +119,13 @@ namespace tm_physics {
 		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_contact_t", "bool first_touch", asOFFSET(tm_physx_on_contact_t, first_touch)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_contact_t", "bool lost_touch", asOFFSET(tm_physx_on_contact_t, lost_touch)));
 
+		AS_CHECK(engine->RegisterObjectType("tm_physx_on_trigger_t", sizeof(tm_physx_on_trigger_t), asOBJ_VALUE | asOBJ_POD));
+		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_trigger_t", "tm_entity_t trigger_entity", asOFFSET(tm_physx_on_trigger_t, trigger_entity)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_trigger_t", "tm_entity_t trigger_shape", asOFFSET(tm_physx_on_trigger_t, trigger_shape)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_trigger_t", "tm_entity_t touched_entity", asOFFSET(tm_physx_on_trigger_t, touched_entity)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_trigger_t", "tm_entity_t touched_shape", asOFFSET(tm_physx_on_trigger_t, touched_shape)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_physx_on_trigger_t", "bool lost_touch", asOFFSET(tm_physx_on_trigger_t, lost_touch)));
+
 		AS_CHECK(engine->RegisterEnum("tm_physx_force_flags"));
 		AS_CHECK(engine->RegisterEnumValue("tm_physx_force_flags", "TM_PHYSX_FORCE_FLAGS__FORCE", TM_PHYSX_FORCE_FLAGS__FORCE));
 		AS_CHECK(engine->RegisterEnumValue("tm_physx_force_flags", "TM_PHYSX_FORCE_FLAGS__IMPULSE", TM_PHYSX_FORCE_FLAGS__IMPULSE));
@@ -126,6 +147,7 @@ namespace tm_physics {
 
 		AS_CHECK(engine->RegisterGlobalFunction("tm_array_t<tm_physx_raycast_hit_t>@ raycast(tm_physx_scene_o@ physx, tm_vec3_t from, tm_vec3_t dir, float distance, tm_tt_id_t collision_id, bool ignore_static = false, bool ignore_dynamic = false, uint max_touches = 4)", asFUNCTION(raycast), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_array_t<tm_physx_on_contact_t>@ on_contact(tm_physx_scene_o@ physx)", asFUNCTION(on_contact), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_array_t<tm_physx_on_trigger_t>@ on_trigger(tm_physx_scene_o@ physx)", asFUNCTION(on_trigger), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));
 	}
 }

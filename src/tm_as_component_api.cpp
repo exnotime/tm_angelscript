@@ -111,6 +111,16 @@ namespace tm_component {
 		tm_transform_component_api->set_local_transform(man, e, t);
 	}
 
+	void update_world_transform(tm_component_manager_o* manager, tm_entity_t e) {
+		tm_transform_component_manager_o* man = (tm_transform_component_manager_o*)manager;
+		tm_transform_component_api->update_world_transform(man, e);
+	}
+
+	void update_local_transform(tm_component_manager_o* manager, tm_entity_t e) {
+		tm_transform_component_manager_o* man = (tm_transform_component_manager_o*)manager;
+		tm_transform_component_api->update_local_transform(man, e);
+	}
+
 	void register_component_interface(asIScriptEngine* engine) {
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_component_type_t lookup_component_type(tm_entity_context_o@ ctx, tm_strhash_t hashed_name)", asFUNCTION(lookup_component_type), asCALL_CDECL));
@@ -134,6 +144,8 @@ namespace tm_component {
 		AS_CHECK(engine->RegisterGlobalFunction("void set_local_rotation(tm_component_manager_o@ manager, tm_entity_t e, tm_vec4_t v)", asFUNCTION(set_local_rotation), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("const tm_transform_t@ get_local_transform(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(get_local_transform), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void set_local_transform(tm_component_manager_o@ manager, tm_entity_t e, const tm_transform_t@ t)", asFUNCTION(set_local_transform), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void update_world_transform(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(update_world_transform), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void update_local_transform(tm_component_manager_o@ manager, tm_entity_t e)", asFUNCTION(update_local_transform), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));
 	}
 }

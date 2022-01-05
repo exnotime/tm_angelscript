@@ -524,8 +524,6 @@ static tm_simulation_entry_i angelscript_simulation_entry_inst;
 static bool already_loaded = false;
 TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 {
-	//while (!::IsDebuggerPresent())
-	//	::Sleep(100);
 
 	if (load) {
 		tm_logger_api = tm_get_api(reg, tm_logger_api);
