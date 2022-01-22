@@ -2,7 +2,7 @@
 #include "tm_angelscript.h"
 #include <angelscript.h>
 #include <new>
-#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering something Angelscript, %d", __LINE__);} } while(false)
+#define AS_CHECK(x) do{if(x < 0) { tm_logger_api->printf(TM_LOG_TYPE_INFO, "Failed registering strings Angelscript, %s:%d", __FILE__, __LINE__);} } while(false)
 
 extern "C" {
 #include <plugins/entity/entity.h>
@@ -16,11 +16,13 @@ extern "C" {
 #include <foundation/carray.inl>
 #include <foundation/string.h>
 #include <foundation/string.inl>
+#include <foundation/sprintf.h>
 }
 
 
 namespace tm_string {
 
+	#define DEFAULT_NUMBER_LENGTH 16
 	static tm_allocator_i* _allocator = nullptr;
 
 	struct tm_string_factory : public asIStringFactory {
@@ -237,12 +239,121 @@ namespace tm_string {
 		tm_logger_api->print(tm_log_type::TM_LOG_TYPE_DEBUG, s.data);
 	}
 
-	//TODO: Lookup if this is the same as TM_STATIC_HASH
 	tm_strhash_t hash_string(const tm_str_t& s) {
 		return tm_murmur_hash_str(s);
 	}
 
-	//To get up and running quickly I have omitted the formatting functions (to uint/float etc) and find functions
+	//operators
+	tm_str_t tm_str_opAdd(const tm_str_t other, tm_str_t* obj) {
+		uint32_t string_size = other.size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, other.data, other.size);
+		s[string_size] = 0;
+		return TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	void tm_str_opAddAssign(const tm_str_t other, tm_str_t* obj) {
+		uint32_t string_size = other.size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, other.data, other.size);
+		s[string_size] = 0;
+		tm_free(_allocator, (void*)obj->data, obj->size + obj->null_terminated ? 1 : 0);
+		*obj = TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+	
+	tm_str_t tm_str_opAdd_int(const int other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%d", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		return TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	void tm_str_opAddAssign_int(const int other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%d", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		tm_free(_allocator, (void*)obj->data, obj->size + obj->null_terminated ? 1 : 0);
+		*obj = TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	tm_str_t tm_str_opAdd_uint(const uint32_t other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%u", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		return TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	void tm_str_opAddAssign_uint(const uint32_t other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%u", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		tm_free(_allocator, (void*)obj->data, obj->size + obj->null_terminated ? 1 : 0);
+		*obj = TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	tm_str_t tm_str_opAdd_float(const float other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%f", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		return TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	void tm_str_opAddAssign_float(const float other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%f", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		tm_free(_allocator, (void*)obj->data, obj->size + obj->null_terminated ? 1 : 0);
+		*obj = TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	tm_str_t tm_str_opAdd_double(const double other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%f", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		return TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
+
+	void tm_str_opAddAssign_double(const double other, tm_str_t* obj) {
+		char buffer[DEFAULT_NUMBER_LENGTH];
+		int buffer_size = tm_sprintf_api->print(buffer, DEFAULT_NUMBER_LENGTH, "%f", other);
+		uint32_t string_size = buffer_size + obj->size;
+		char* s = (char*)tm_alloc(_allocator, string_size + 1);
+		memcpy(s, obj->data, obj->size);
+		memcpy(s + obj->size, buffer, buffer_size);
+		s[string_size] = 0;
+		tm_free(_allocator, (void*)obj->data, obj->size + obj->null_terminated ? 1 : 0);
+		*obj = TM_LITERAL(tm_str_t) { s, string_size, true };
+	}
 
 	void register_tm_string_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
 		//Is the string factory needed when we are not compiling?
@@ -252,30 +363,39 @@ namespace tm_string {
 		_string_factory->init(allocator);
 		
 
-		int r = engine->RegisterObjectType("tm_str_t", sizeof(tm_str_t), asOBJ_VALUE | asGetTypeTraits<tm_str_t>());
-		r = engine->RegisterStringFactory("tm_str_t", _string_factory);
-		r = engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(tm_construct_string), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_CONSTRUCT, "void f(const tm_str_t &in)", asFUNCTION(tm_copy_construct_string), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(tm_destruct_string), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "tm_str_t &opAssign(const tm_str_t &in)", asFUNCTION(tm_string_op_assign), asCALL_CDECL_OBJFIRST);
-		r = engine->RegisterObjectMethod("tm_str_t", "tm_str_t &opAddAssign(const tm_str_t &in)", asFUNCTION(tm_add_assign_string_to_string), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "bool opEquals(const tm_str_t &in) const", asFUNCTION(tm_string_equals), asCALL_CDECL_OBJFIRST);
-		r = engine->RegisterObjectMethod("tm_str_t", "int opCmp(const tm_str_t &in) const", asFUNCTION(tm_string_compare), asCALL_CDECL_OBJFIRST);
-		r = engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const tm_str_t &in) const", asFUNCTION(tm_add_string_to_string), asCALL_CDECL_OBJFIRST);
-		r = engine->RegisterObjectMethod("tm_str_t", "uint size() const", asFUNCTION(tm_string_size), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "void resize(uint)", asFUNCTION(tm_string_resize), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "bool is_empty() const", asFUNCTION(tm_string_is_empty), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "uint8 &opIndex(uint)", asFUNCTION(tm_string_char_at), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "const uint8 &opIndex(uint) const", asFUNCTION(tm_string_char_at), asCALL_CDECL_OBJLAST);
+		AS_CHECK(engine->RegisterObjectType("tm_str_t", sizeof(tm_str_t), asOBJ_VALUE | asGetTypeTraits<tm_str_t>()));
+		AS_CHECK(engine->RegisterStringFactory("tm_str_t", _string_factory));
+		AS_CHECK(engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(tm_construct_string), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_CONSTRUCT, "void f(const tm_str_t &in)", asFUNCTION(tm_copy_construct_string), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectBehaviour("tm_str_t", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(tm_destruct_string), asCALL_CDECL_OBJLAST));
 
-		r = engine->RegisterObjectMethod("tm_str_t", "tm_str_t substr(uint start = 0, int count = -1) const", asFUNCTION(tm_substring), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "void insert(uint pos, const tm_str_t &in other)", asFUNCTION(tm_string_insert), asCALL_CDECL_OBJLAST);
-		r = engine->RegisterObjectMethod("tm_str_t", "void erase(uint pos, int count = -1)", asFUNCTION(tm_string_erase), asCALL_CDECL_OBJLAST);
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const tm_str_t v) const", asFUNCTION(tm_str_opAdd), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void opAddAssign(const tm_str_t v)", asFUNCTION(tm_str_opAddAssign), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const int v) const", asFUNCTION(tm_str_opAdd_int), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void opAddAssign(const int v)", asFUNCTION(tm_str_opAddAssign_int), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const uint v) const", asFUNCTION(tm_str_opAdd_uint), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void opAddAssign(const uint v)", asFUNCTION(tm_str_opAddAssign_uint), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const float v) const", asFUNCTION(tm_str_opAdd_float), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void opAddAssign(const float v)", asFUNCTION(tm_str_opAddAssign_float), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const double v) const", asFUNCTION(tm_str_opAdd_double), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void opAddAssign(const double v)", asFUNCTION(tm_str_opAddAssign_double), asCALL_CDECL_OBJLAST));
 
-		r = engine->RegisterGlobalFunction("void print(const tm_str_t &in s)", asFUNCTION(tm_print_string), asCALL_CDECL);
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t &opAssign(const tm_str_t &in)", asFUNCTION(tm_string_op_assign), asCALL_CDECL_OBJFIRST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t &opAddAssign(const tm_str_t &in)", asFUNCTION(tm_add_assign_string_to_string), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "bool opEquals(const tm_str_t &in) const", asFUNCTION(tm_string_equals), asCALL_CDECL_OBJFIRST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "int opCmp(const tm_str_t &in) const", asFUNCTION(tm_string_compare), asCALL_CDECL_OBJFIRST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t opAdd(const tm_str_t &in) const", asFUNCTION(tm_add_string_to_string), asCALL_CDECL_OBJFIRST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "uint size() const", asFUNCTION(tm_string_size), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void resize(uint)", asFUNCTION(tm_string_resize), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "bool is_empty() const", asFUNCTION(tm_string_is_empty), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "uint8 &opIndex(uint)", asFUNCTION(tm_string_char_at), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "const uint8 &opIndex(uint) const", asFUNCTION(tm_string_char_at), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "tm_str_t substr(uint start = 0, int count = -1) const", asFUNCTION(tm_substring), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void insert(uint pos, const tm_str_t &in other)", asFUNCTION(tm_string_insert), asCALL_CDECL_OBJLAST));
+		AS_CHECK(engine->RegisterObjectMethod("tm_str_t", "void erase(uint pos, int count = -1)", asFUNCTION(tm_string_erase), asCALL_CDECL_OBJLAST));
 
-		engine->RegisterTypedef("tm_strhash_t", "uint64");
-		r = engine->RegisterGlobalFunction("tm_strhash_t hash_string(const tm_str_t &in s)", asFUNCTION(tm_print_string), asCALL_CDECL);
+		AS_CHECK(engine->RegisterGlobalFunction("void print(const tm_str_t &in s)", asFUNCTION(tm_print_string), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_strhash_t tm_murmur_hash_str(const tm_str_t &in s)", asFUNCTION(hash_string), asCALL_CDECL));
 	}
 
 	void destroy_string_factory(tm_allocator_i* allocator) {

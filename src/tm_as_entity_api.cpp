@@ -39,6 +39,7 @@ namespace tm_entity {
 		tm_entity_api->clear_world(ctx);
 	}
 
+
 	void destroy_entity_command(tm_entity_commands_o* cmd, tm_entity_t e) {
 		tm_entity_commands_api->destroy_entity(cmd, e);
 	}

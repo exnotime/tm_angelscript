@@ -42,6 +42,8 @@ extern "C" {
 #include <foundation/input.h>
 #include <foundation/camera.h>
 #include <plugins/physx/physx_scene.h>
+#include <plugins/entity/tag_component.h>
+#include <plugins/ui/draw2d.h>
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -91,7 +93,8 @@ struct tm_simulation_api* tm_simulation_api;
 struct tm_transform_component_api* tm_transform_component_api;
 struct tm_camera_api* tm_camera_api;
 struct tm_physx_scene_api* tm_physx_scene_api;
-
+struct tm_tag_component_api* tm_tag_component_api;
+struct tm_draw2d_api* tm_draw2d_api;
 #include <angelscript.h>
 
 static asIScriptEngine* script_engine;
@@ -111,6 +114,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_physics_api.h"
 #include "tm_as_math_api.h"
 #include "tm_as_camera_api.h"
+#include "tm_as_ui_api.h"
 #include "angelscript_compiler.h"
 
 #include <iostream>
@@ -197,6 +201,7 @@ void setup_angelscript() {
 	tm_camera::register_camera_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_script_component::register_script_component_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_physics::register_physics_interface(script_engine, &_tm_as_allocator.allocator);
+	tm_ui::register_ui_interface(script_engine, &_tm_as_allocator.allocator);
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -560,7 +565,8 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_transform_component_api = tm_get_api(reg, tm_transform_component_api);
 		tm_camera_api = tm_get_api(reg, tm_camera_api);
 		tm_physx_scene_api = tm_get_api(reg, tm_physx_scene_api);
-
+		tm_tag_component_api = tm_get_api(reg, tm_tag_component_api);
+		tm_draw2d_api = tm_get_api(reg, tm_draw2d_api);
 		if (!already_loaded) {
 			setup_angelscript();
 			tm_add_or_remove_implementation(reg, load, tm_the_truth_create_types_i, &create_asset_type);

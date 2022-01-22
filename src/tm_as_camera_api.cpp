@@ -65,7 +65,7 @@ namespace tm_camera {
 	}
 	//Custom version of update maya function. This one will always perform the transform and allows you to set the wanted distance
 	// Based on update_maya from camera.c
-	void update_maya_ext(tm_transform_t* tm, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y, float max_y)
+	void update_orbit(tm_transform_t* tm, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y, float max_y)
 	{
 		const tm_vec3_t p = tm_vec3_sub(tm->pos, focus);
 		float r = tm_vec3_length(p);
@@ -93,6 +93,33 @@ namespace tm_camera {
 		tm_mat44_to_translation_quaternion_scale(&tm->pos, &tm->rot, &tm->scl, &c);
 	}
 
+	void update_orbit_no_translation(tm_transform_t* tm, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y, float max_y)
+	{
+		const tm_vec3_t p = tm_vec3_sub(tm->pos, focus);
+		float r = tm_vec3_length(p);
+		if (r < 1e-5f)
+			r = 1e-5f;
+		float tau = asinf(p.y / r);
+		float phi = atan2f(p.z, p.x);
+
+		phi += rot.x;
+		tau += rot.y;
+		r = distance;
+		tau = tau > max_y ? max_y : tau < min_y ? min_y : tau;
+
+		const tm_vec3_t z = { cosf(phi) * cosf(tau), sinf(tau), sinf(phi) * cosf(tau) };
+		const tm_vec3_t up = { 0, 1, 0 };
+		const tm_vec3_t x = tm_vec3_normalize(tm_vec3_cross(up, z));
+		const tm_vec3_t y = tm_vec3_cross(z, x);
+
+		tm_mat44_t c = *tm_mat44_identity();
+		c.xx = x.x, c.xy = x.y, c.xz = x.z;
+		c.yx = y.x, c.yy = y.y, c.yz = y.z;
+		c.zx = z.x, c.zy = z.y, c.zz = z.z;
+		tm_vec3_t dummy_translation;
+		tm_mat44_to_translation_quaternion_scale(&dummy_translation, &tm->rot, &tm->scl, &c);
+	}
+
 	void register_camera_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {
 		AS_CHECK(engine->SetDefaultNamespace("tm_camera_api"));
 		AS_CHECK(engine->RegisterGlobalFunction("void update_free_flight(const tm_transform_t@ transform, tm_vec3_t t, tm_vec2_t rot)", asFUNCTION(update_free_flight), asCALL_CDECL));
@@ -106,7 +133,8 @@ namespace tm_camera {
 		AS_CHECK(engine->RegisterGlobalFunction("tm_vec3_t camera_forward(tm_camera_t@ camera)", asFUNCTION(camera_forward), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void look_at(const tm_transform_t@ transform, tm_vec3_t pos, tm_vec3_t global_up)", asFUNCTION(look_at), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void look_at_distance(const tm_transform_t@ transform, tm_vec3_t pos, tm_vec3_t global_up, float distance)", asFUNCTION(look_at_distance), asCALL_CDECL));
-		AS_CHECK(engine->RegisterGlobalFunction("void update_maya(const tm_transform_t@ transform, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y = -1.5f, float max_y = 1.5f)", asFUNCTION(update_maya_ext), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void update_orbit(const tm_transform_t@ transform, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y = -1.5f, float max_y = 1.5f)", asFUNCTION(update_orbit), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("void update_orbit_no_translation(const tm_transform_t@ transform, tm_vec3_t focus, tm_vec2_t rot, float distance, float min_y = -1.5f, float max_y = 1.5f)", asFUNCTION(update_orbit_no_translation), asCALL_CDECL));
 		AS_CHECK(engine->SetDefaultNamespace(""));
 	}
 }

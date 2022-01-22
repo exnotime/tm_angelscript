@@ -33,6 +33,9 @@ namespace tm_simulation {
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "bool running_in_editor", asOFFSET(tm_simulation_frame_args_t, running_in_editor)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_entity_commands_o@ commands", asOFFSET(tm_simulation_frame_args_t, commands)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_physx_scene_o@ physx_scene", asOFFSET(tm_simulation_frame_args_t, physx_scene)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_ui_o@ ui", asOFFSET(tm_simulation_frame_args_t, ui)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_ui_style_t@ uistyle", asOFFSET(tm_simulation_frame_args_t, uistyle)));
+		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_frame_args_t", "tm_rect_t rect", asOFFSET(tm_simulation_frame_args_t, rect)));
 
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_start_args_t", "tm_the_truth_o@ tt", asOFFSET(tm_simulation_start_args_t, tt)));
 		AS_CHECK(engine->RegisterObjectProperty("tm_simulation_start_args_t", "tm_entity_context_o@ entity_ctx", asOFFSET(tm_simulation_start_args_t, entity_ctx)));
