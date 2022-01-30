@@ -44,6 +44,9 @@ extern "C" {
 #include <plugins/physx/physx_scene.h>
 #include <plugins/entity/tag_component.h>
 #include <plugins/ui/draw2d.h>
+#include <plugins/settings/settings.h>
+#include <plugins/editor_views/asset_browser.h>
+#include <the_machinery/the_machinery_tab.h>
 }
 
 struct tm_logger_api* tm_logger_api;
@@ -95,6 +98,9 @@ struct tm_camera_api* tm_camera_api;
 struct tm_physx_scene_api* tm_physx_scene_api;
 struct tm_tag_component_api* tm_tag_component_api;
 struct tm_draw2d_api* tm_draw2d_api;
+struct tm_settings_api* tm_settings_api;
+struct tm_asset_save_i* tm_asset_save_i;
+
 #include <angelscript.h>
 
 static asIScriptEngine* script_engine;
@@ -284,21 +290,19 @@ extern "C" {
 #define TM_TT_TYPE_HASH__SCRIPT_SIMULATION TM_STATIC_HASH("script_simulation", 0xc8d39de7cadebcd6ULL)
 #define	TM_TT_TYPE_HASH__SCRIPT_SIMULATION_MODULE TM_STATIC_HASH("module", 0xaf2b5e99b268c9d0ULL)
 
-	enum SCRIPT_MODULE_PROPERTIES {
-		TM_TT_PROP__SCRIPT_MODULE__MAIN,
-		TM_TT_PROP__SCRIPT_MODULE__BYTECODE,
-		TM_TT_PROP__SCRIPT_MODULE__DEFINES,
-		TM_TT_PROP__SCRIPT_MODULE__COUNT
-	};
+enum SCRIPT_MODULE_PROPERTIES {
+	TM_TT_PROP__SCRIPT_MODULE__MAIN,
+	TM_TT_PROP__SCRIPT_MODULE__BYTECODE,
+	TM_TT_PROP__SCRIPT_MODULE__DEFINES,
+	TM_TT_PROP__SCRIPT_MODULE__COUNT
+};
 
-	const char* get_project_path(tm_temp_allocator_i* temp_allocator) {
-		tm_application_o* app = tm_application_api->application();
-		tm_tt_id_t project_setting_tt_id;
-		tm_the_truth_o* project_tt = tm_the_machinery_api->project_settings(app, &project_setting_tt_id);
-		const tm_the_truth_object_o* project_obj = tm_the_truth_api->read(project_tt, project_setting_tt_id);
-		tm_tt_prop_value_t project_settings_path = tm_the_truth_api->get_property_value(project_tt, project_obj, TM_TT_PROP__PROJECT_SETTINGS__PATH, temp_allocator);
-		return project_settings_path.string;
-	}
+const char* get_project_path(tm_temp_allocator_i* temp_allocator) {
+	tm_application_o* app = tm_application_api->application();
+	tm_tab_create_context_t context;
+	tm_application_api->tab_create_context(app, &context);
+	return context.save_interface->asset_root_path(context.save_interface->inst);
+}
 
 bool compile_module_object(tm_the_truth_o* tt, tm_tt_id_t object, tm_temp_allocator_i* temp_allocator) {
 	const char* project_path = get_project_path(temp_allocator);
@@ -484,10 +488,10 @@ static void create_asset_type(tm_the_truth_o* tt) {
 		{ "bytecode", TM_THE_TRUTH_PROPERTY_TYPE_BUFFER }
 	};
 	const tm_tt_type_t module_type = tm_the_truth_api->create_object_type(tt, TM_TT_TYPE__SCRIPT_MODULE, module_properties, TM_ARRAY_COUNT(module_properties));
-	tm_the_truth_api->set_aspect(tt, module_type, TM_TT_ASPECT__FILE_EXTENSION, TM_TT_TYPE__SCRIPT_MODULE);
+	tm_the_truth_api->set_aspect(tt, module_type, tm_tt_assets_file_extension_aspect_i_hash, TM_TT_TYPE__SCRIPT_MODULE);
 	static tm_properties_aspect_i properties_aspect;
 	properties_aspect.custom_ui = module_properties__custom_ui;
-	tm_the_truth_api->set_aspect(tt, module_type, TM_TT_ASPECT__PROPERTIES, &properties_aspect);
+	tm_the_truth_api->set_aspect(tt, module_type, tm_properties_aspect_i_hash, &properties_aspect);
 
 	//Simulation type
 	static tm_the_truth_property_definition_t simulation_properties[TM_TT_PROP__SCRIPT_SIMULATION__COUNT];
@@ -501,10 +505,10 @@ static void create_asset_type(tm_the_truth_o* tt) {
 	simulation_properties[TM_TT_PROP__SCRIPT_SIMULATION__MODULE].type_hash = TM_TT_TYPE_HASH__ANYTHING;
 
 	const tm_tt_type_t simulation_type = tm_the_truth_api->create_object_type(tt, TM_TT_TYPE_SCRIPT_SIMULATION, simulation_properties, TM_ARRAY_COUNT(simulation_properties));
-	tm_the_truth_api->set_aspect(tt, simulation_type, TM_TT_ASPECT__FILE_EXTENSION, TM_TT_TYPE_SCRIPT_SIMULATION);
+	tm_the_truth_api->set_aspect(tt, simulation_type, tm_tt_assets_file_extension_aspect_i_hash, TM_TT_TYPE_SCRIPT_SIMULATION);
 	static tm_properties_aspect_i simulation_properties_aspect;
 	simulation_properties_aspect.custom_ui = simulation_properties__custom_ui;
-	tm_the_truth_api->set_aspect(tt, simulation_type, TM_TT_ASPECT__PROPERTIES, &simulation_properties_aspect);
+	tm_the_truth_api->set_aspect(tt, simulation_type, tm_properties_aspect_i_hash, &simulation_properties_aspect);
 }
 // -- asset browser register interface
 static tm_tt_id_t asset_browser_create_script_module(struct tm_asset_browser_create_asset_o* inst, tm_the_truth_o* tt, tm_tt_undo_scope_t undo_scope)
@@ -522,14 +526,21 @@ static tm_tt_id_t asset_browser_create_script_simulation(struct tm_asset_browser
 	return tt_id;
 }
 
+void plugin_init_callback(struct tm_plugin_o* inst, struct tm_allocator_i* allocator) {
+	setup_angelscript();
+}
+
+void plugin_shutdown_callback(struct tm_plugin_o* inst) {
+	shutdown_angelscript();
+}
+
 static tm_asset_browser_create_asset_i asset_browser_create_script_simulation_inst;
-
 static tm_simulation_entry_i angelscript_simulation_entry_inst;
+static tm_plugin_init_i angelscript_plugin_init_inst;
+static tm_plugin_shutdown_i angelscript_plugin_shutdown_inst;
 
-static bool already_loaded = false;
 TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 {
-
 	if (load) {
 		tm_logger_api = tm_get_api(reg, tm_logger_api);
 		tm_error_api = tm_get_api(reg, tm_error_api);
@@ -567,32 +578,32 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_physx_scene_api = tm_get_api(reg, tm_physx_scene_api);
 		tm_tag_component_api = tm_get_api(reg, tm_tag_component_api);
 		tm_draw2d_api = tm_get_api(reg, tm_draw2d_api);
-		if (!already_loaded) {
-			setup_angelscript();
-			tm_add_or_remove_implementation(reg, load, tm_the_truth_create_types_i, &create_asset_type);
+		tm_settings_api = tm_get_api(reg, tm_settings_api);
+		tm_add_or_remove_implementation(reg, load, tm_the_truth_create_types_i, &create_asset_type);
 
-			asset_browser_create_script_module_inst.asset_name = TM_LOCALIZE_LATER("New Angelscript Module");
-			asset_browser_create_script_module_inst.menu_name = TM_LOCALIZE_LATER("New Angelscript Module");
-			asset_browser_create_script_module_inst.create = asset_browser_create_script_module;
-			tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_module_inst);
+		asset_browser_create_script_module_inst.asset_name = TM_LOCALIZE_LATER("New Angelscript Module");
+		asset_browser_create_script_module_inst.menu_name = TM_LOCALIZE_LATER("New Angelscript Module");
+		asset_browser_create_script_module_inst.create = asset_browser_create_script_module;
+		tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_module_inst);
 
-			asset_browser_create_script_simulation_inst.asset_name = TM_LOCALIZE_LATER("New Angelscript Simulation");
-			asset_browser_create_script_simulation_inst.menu_name = TM_LOCALIZE_LATER("New Angelscript Simulation");
-			asset_browser_create_script_simulation_inst.create = asset_browser_create_script_simulation;
-			tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_simulation_inst);
+		asset_browser_create_script_simulation_inst.asset_name = TM_LOCALIZE_LATER("New Angelscript Simulation");
+		asset_browser_create_script_simulation_inst.menu_name = TM_LOCALIZE_LATER("New Angelscript Simulation");
+		asset_browser_create_script_simulation_inst.create = asset_browser_create_script_simulation;
+		tm_add_or_remove_implementation(reg, load, tm_asset_browser_create_asset_i, &asset_browser_create_script_simulation_inst);
 
-			angelscript_simulation_entry_inst = {};
-			angelscript_simulation_entry_inst.display_name = "Angelscript simulation";
-			angelscript_simulation_entry_inst.id = TM_STATIC_HASH("angelscript_simulation_entry", 0xe70c13e72ea3e184ULL);
-			angelscript_simulation_entry_inst.start = simulation_start;
-			angelscript_simulation_entry_inst.stop = simulation_stop;
-			angelscript_simulation_entry_inst.tick = simulation_tick;
-			angelscript_simulation_entry_inst.hot_reload = simulation_hot_reload;
-			tm_add_or_remove_implementation(reg, load, tm_simulation_entry_i, &angelscript_simulation_entry_inst);
-			already_loaded = true;
-		}
-	} else {
-		shutdown_angelscript();
+		angelscript_simulation_entry_inst = {};
+		angelscript_simulation_entry_inst.display_name = "Angelscript simulation";
+		angelscript_simulation_entry_inst.id = TM_STATIC_HASH("angelscript_simulation_entry", 0xe70c13e72ea3e184ULL);
+		angelscript_simulation_entry_inst.start = simulation_start;
+		angelscript_simulation_entry_inst.stop = simulation_stop;
+		angelscript_simulation_entry_inst.tick = simulation_tick;
+		angelscript_simulation_entry_inst.hot_reload = simulation_hot_reload;
+		tm_add_or_remove_implementation(reg, load, tm_simulation_entry_i, &angelscript_simulation_entry_inst);
+
+		angelscript_plugin_init_inst.init = plugin_init_callback;
+		tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &angelscript_plugin_init_inst);
+		angelscript_plugin_shutdown_inst.shutdown = plugin_shutdown_callback;
+		tm_add_or_remove_implementation(reg, load, tm_plugin_shutdown_i, &angelscript_plugin_shutdown_inst);
 	}
 
 }
