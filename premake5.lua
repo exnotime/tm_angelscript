@@ -110,7 +110,7 @@ project "tm_angelscript"
     language "C++"
     files {"*.inl", "*.h", "*.cpp", "as_addons/**", "src/**"}
     sysincludedirs { "" }
-    cppdialect "C++17"
+    cppdialect "C++17" --for std::filesystem::relative_path
 filter "configurations:Debug"
     links { angelscript_debug_libs }
 filter "configurations:Release"

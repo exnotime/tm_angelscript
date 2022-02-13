@@ -122,6 +122,7 @@ static asIScriptContext* script_context; //TODO: Allow multiple
 #include "tm_as_camera_api.h"
 #include "tm_as_ui_api.h"
 #include "angelscript_compiler.h"
+#include "AngelScriptExporter.h"
 
 #include <iostream>
 #include <filesystem>
@@ -177,6 +178,8 @@ tm_angelscript_system* get_system() {
 	_tm_as_system.asset_root = tm_the_machinery_api->get_asset_root(tm_application_api->application());
 	return &_tm_as_system;
 }
+
+
 void setup_angelscript() {
 	//Setup allocator
 	const tm_allocator_i* system_allocator = tm_allocator_api->system;
@@ -208,6 +211,8 @@ void setup_angelscript() {
 	tm_script_component::register_script_component_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_physics::register_physics_interface(script_engine, &_tm_as_allocator.allocator);
 	tm_ui::register_ui_interface(script_engine, &_tm_as_allocator.allocator);
+
+	
 }
 
 void prepare_angelscript_function(asIScriptFunction* func) {
@@ -317,6 +322,25 @@ bool compile_module_object(tm_the_truth_o* tt, tm_tt_id_t object, tm_temp_alloca
 		return true;
 	}
 	return false;
+}
+
+void export_engine() {
+	TM_INIT_TEMP_ALLOCATOR(ta);
+	const char* project_folder = get_project_path(ta);
+	const char* file_name = "engine_interface.json";
+	char* buffer = (char*)tm_temp_alloc(ta, 256);
+	tm_sprintf_api->print(buffer, 256, "%s/%s", project_folder, file_name);
+	AngelScriptExporter::ExportEngineAsJSON(buffer, script_engine);
+	TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
+}
+
+void export_module(const char* name, asIScriptModule* modul) {
+	TM_INIT_TEMP_ALLOCATOR(ta);
+	const char* project_folder = get_project_path(ta);
+	char* buffer = (char*)tm_temp_alloc(ta, 256);
+	tm_sprintf_api->print(buffer, 256, "%s/%s.json", project_folder, name);
+	AngelScriptExporter::ExportModuleAsJSON(buffer, modul, script_engine);
+	TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
 }
 
 enum SCRIPT_SIMULATION_PROPERTIES {
@@ -453,6 +477,28 @@ static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, 
 	}
 	item_rect.y += compile_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
 
+	tm_ui_button_t export_button = {};
+	export_button.text = "Export";
+	export_button.tooltip = "Exports the module as json";
+	export_button.rect = item_rect;
+	if (tm_ui_api->button(args->ui, args->uistyle, &export_button)) {
+		const tm_the_truth_object_o* module_obj = tm_the_truth_api->read(args->tt, object);
+		tm_tt_buffer_t bytecode_buffer = tm_the_truth_api->get_buffer(args->tt, module_obj, TM_TT_PROP__SCRIPT_MODULE__BYTECODE);
+		const char* module_name = tm_the_truth_assets_api->object_asset_name(args->tt, object);
+		asIScriptModule* mod = as_compiler::get_module_from_bytecode(module_name, bytecode_buffer.size, bytecode_buffer.data);
+		export_module(module_name, mod);
+	}
+	item_rect.y += export_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
+
+	tm_ui_button_t export_engine_button = {};
+	export_engine_button.text = "Export Engine";
+	export_engine_button.tooltip = "Exports the engine as json";
+	export_engine_button.rect = item_rect;
+	if (tm_ui_api->button(args->ui, args->uistyle, &export_engine_button)) {
+		export_engine();
+	}
+	item_rect.y += export_engine_button.rect.h + args->metrics[TM_PROPERTIES_METRIC_MARGIN];
+
 	TM_SHUTDOWN_TEMP_ALLOCATOR(ta);
 	return item_rect.y;
 }
@@ -534,10 +580,16 @@ void plugin_shutdown_callback(struct tm_plugin_o* inst) {
 	shutdown_angelscript();
 }
 
+void plugin_reload_callback(struct tm_plugin_o* inst) {
+	shutdown_angelscript();
+	setup_angelscript();
+}
+
 static tm_asset_browser_create_asset_i asset_browser_create_script_simulation_inst;
 static tm_simulation_entry_i angelscript_simulation_entry_inst;
 static tm_plugin_init_i angelscript_plugin_init_inst;
 static tm_plugin_shutdown_i angelscript_plugin_shutdown_inst;
+static tm_plugin_reload_i angelscript_plugin_reload_inst;
 
 TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 {
@@ -604,6 +656,8 @@ TM_DLL_EXPORT void tm_load_plugin(struct tm_api_registry_api* reg, bool load)
 		tm_add_or_remove_implementation(reg, load, tm_plugin_init_i, &angelscript_plugin_init_inst);
 		angelscript_plugin_shutdown_inst.shutdown = plugin_shutdown_callback;
 		tm_add_or_remove_implementation(reg, load, tm_plugin_shutdown_i, &angelscript_plugin_shutdown_inst);
+		angelscript_plugin_reload_inst.reload = plugin_reload_callback;
+		tm_add_or_remove_implementation(reg, load, tm_plugin_reload_i, &angelscript_plugin_reload_inst);
 	}
 
 }
