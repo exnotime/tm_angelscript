@@ -9,13 +9,14 @@ extern "C" {
 #include <foundation/the_truth.h>
 #include <foundation/the_truth_assets.h>
 #include <the_machinery/the_machinery.h>
+#include <plugins/ui/docking.h>
 #include <the_machinery/scene_tab.h>
 }
 
 namespace tm_entity {
 
-	tm_entity_context_o* create_context(tm_entity_create_components flags) {
-		return tm_entity_api->create_context(get_system()->allocator, get_system()->tt, flags);
+	tm_entity_context_o* create_context(tm_entity_create_components flags, tm_gamestate_o* gamestate) {
+		return tm_entity_api->create_context(get_system()->allocator, get_system()->tt, flags, gamestate);
 	}
 
 	void destroy_context(tm_entity_context_o* ctx) {
@@ -73,7 +74,7 @@ namespace tm_entity {
 		AS_CHECK(engine->RegisterEnumValue("tm_entity_create_components", "TM_ENTITY_CREATE_COMPONENTS_EDITOR", TM_ENTITY_CREATE_COMPONENTS_EDITOR));
 		
 		AS_CHECK(engine->SetDefaultNamespace("tm_entity_api"));
-		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_context_o@ create_context(tm_entity_create_components flags)", asFUNCTION(create_context), asCALL_CDECL));
+		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_context_o@ create_context(tm_entity_create_components flags, tm_gamestate_o@ gamestate)", asFUNCTION(create_context), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void destroy_context(tm_entity_context_o@ ctx)", asFUNCTION(destroy_context), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("tm_entity_t create_entity(tm_entity_context_o@ ctx)", asFUNCTION(create_entity), asCALL_CDECL));
 		AS_CHECK(engine->RegisterGlobalFunction("void destroy_entity(tm_entity_context_o@ ctx, tm_entity_t e)", asFUNCTION(destroy_entity), asCALL_CDECL));

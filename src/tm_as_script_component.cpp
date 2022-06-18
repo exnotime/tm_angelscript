@@ -46,8 +46,8 @@ namespace tm_script_component {
 	void get_script_component(tm_entity_context_o* ctx, tm_entity_t e, tm_component_type_t t, void* obj, int type_id) {
 		asIScriptEngine* engine = asGetActiveContext()->GetEngine();
 		asITypeInfo* type = engine->GetTypeInfoById(type_id);
-		void* data = tm_entity_api->get_component(ctx, e, t);
-		engine->AssignScriptObject(obj, data, type);
+		const void* data = tm_entity_api->read_component(ctx, e, t);
+		engine->AssignScriptObject(obj, const_cast<void*>(data), type);
 	}
 
 	void register_script_component_interface(asIScriptEngine* engine, tm_allocator_i* allocator) {

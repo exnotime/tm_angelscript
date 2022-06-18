@@ -365,6 +365,7 @@ static const char* simulation_stop_declaration = "void simulation_stop(tm_entity
 static tm_script_simulation_t* _simulations = nullptr;
 
 static tm_simulation_state_o* simulation_start(tm_simulation_start_args_t* args){
+	
 	TM_INIT_TEMP_ALLOCATOR(ta);
 	if (_simulations) {
 		tm_carray_free(_simulations, &_tm_as_allocator.allocator);
@@ -439,7 +440,6 @@ void simulation_tick(tm_simulation_state_o* state, tm_simulation_frame_args_t* a
 	//Run garbage collection
 	//TODO: Scale garbage collection to keep up with garbage build up
 	script_engine->GarbageCollect(asGC_ONE_STEP);
-
 }
 void simulation_hot_reload(tm_simulation_state_o* state, struct tm_entity_commands_o* commands) {
 	uint32_t sim_count = (uint32_t)tm_carray_size(_simulations);
@@ -450,6 +450,7 @@ void simulation_hot_reload(tm_simulation_state_o* state, struct tm_entity_comman
 		}
 	}
 }
+
 
 static float module_properties__custom_ui(struct tm_properties_ui_args_t* args, tm_rect_t item_rect, tm_tt_id_t object){
 	TM_INIT_TEMP_ALLOCATOR(ta);
@@ -572,6 +573,7 @@ static tm_tt_id_t asset_browser_create_script_simulation(struct tm_asset_browser
 	return tt_id;
 }
 
+
 void plugin_init_callback(struct tm_plugin_o* inst, struct tm_allocator_i* allocator) {
 	setup_angelscript();
 }
@@ -581,8 +583,8 @@ void plugin_shutdown_callback(struct tm_plugin_o* inst) {
 }
 
 void plugin_reload_callback(struct tm_plugin_o* inst) {
-	shutdown_angelscript();
-	setup_angelscript();
+	//shutdown_angelscript();
+	//setup_angelscript();
 }
 
 static tm_asset_browser_create_asset_i asset_browser_create_script_simulation_inst;

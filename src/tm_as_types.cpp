@@ -61,6 +61,7 @@ void register_tm_types(asIScriptEngine* engine)
 	AS_CHECK(engine->RegisterObjectType("tm_the_truth_object_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_physx_scene_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_simulation_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
+	AS_CHECK(engine->RegisterObjectType("tm_gamestate_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_simulation_frame_args_t", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_simulation_start_args_t", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
 	AS_CHECK(engine->RegisterObjectType("tm_component_manager_o", sizeof(void*), asOBJ_REF | asOBJ_NOCOUNT));
